@@ -28,7 +28,7 @@ var PICKS=[
 var lastPick=-1;
 function pickHtml(){
   var k;do{k=Math.floor(Math.random()*PICKS.length)}while(k===lastPick&&PICKS.length>1);lastPick=k;var p=PICKS[k];
-  return '<div class="rec"><span class="recl">今天必點</span><div class="recb"><img'+(p.sq?' class="sq"':'')+' src="assets/'+p.i+'" alt="'+p.n+'" width="68" height="68"><div><b>'+p.n+'</b><span class="rt">'+p.t+'</span></div></div><a class="go" href="'+p.to+'">看這一項</a></div>';
+  return '<div class="rec"><span class="recl">今天必點</span><div class="recb"><img'+(p.sq?' class="sq"':'')+' src="assets/'+p.i+'?v=9" alt="'+p.n+'" width="68" height="68"><div><b>'+p.n+'</b><span class="rt">'+p.t+'</span></div></div><a class="go" href="'+p.to+'">看這一項</a></div>';
 }
 // mini game
 var cv=d.getElementById('game'),ctx=cv.getContext('2d');
