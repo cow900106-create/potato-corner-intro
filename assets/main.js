@@ -12,6 +12,24 @@ if('IntersectionObserver' in window){
   els.forEach(function(el,i){el.style.transitionDelay=(i%4)*70+'ms';io.observe(el)});
 }else{els.forEach(function(el){el.classList.add('in')})}
 
+// today's must-order
+var PICKS=[
+ {n:'奶油松露',t:'12/1 上市的新風味粉，搶先嘗鮮。',i:'new-creamy-truffle.webp',to:'#it-truffle'},
+ {n:'熔岩起司枕',t:'酥脆外皮包著流心起司，一口咬下。',i:'new-cheese-pillow.webp',to:'#it-pillow'},
+ {n:'香菜爆擊風味',t:'香菜控請尖叫，一口接一口。',i:'season-coriander.webp',to:'#it-coriander'},
+ {n:'莓好氣泡醋飲',t:'清爽酸甜的氣泡感，好解膩。統一時代B2門市限定。',i:'season-berry-fizz.webp',to:'#it-berry'},
+ {n:'歡樂派對三拼 $278',t:'薯條、捲捲薯、雞米花一次吃到。',i:'icons/party.webp',sq:1,to:'#it-party'},
+ {n:'雙拼套餐 A $200',t:'兩份薯條加一杯飲料，選 2 種口味。',i:'icons/combo.webp',sq:1,to:'#it-combo'},
+ {n:'捲捲薯 $138',t:'一圈一圈的酥脆，搖上你愛的粉。',i:'icons/loopy.webp',sq:1,to:'#it-loopy'},
+ {n:'雞米花 $158',t:'外酥內嫩，一口一顆停不下來。',i:'icons/pops.webp',sq:1,to:'#it-pops'},
+ {n:'微笑薯餅 $138',t:'笑臉造型的薯餅，加購價 $38。',i:'icons/smiley.webp',sq:1,to:'#it-smiley'},
+ {n:'招牌薯條 中份 $128',t:'經典薯條，現炸現搖。',i:'icons/fries.webp',sq:1,to:'#it-fries'}
+];
+var lastPick=-1;
+function pickHtml(){
+  var k;do{k=Math.floor(Math.random()*PICKS.length)}while(k===lastPick&&PICKS.length>1);lastPick=k;var p=PICKS[k];
+  return '<div class="rec"><span class="recl">今天必點</span><div class="recb"><img'+(p.sq?' class="sq"':'')+' src="assets/'+p.i+'" alt="'+p.n+'" width="68" height="68"><div><b>'+p.n+'</b><span class="rt">'+p.t+'</span></div></div><a class="go" href="'+p.to+'">看這一項</a></div>';
+}
 // mini game
 var cv=d.getElementById('game'),ctx=cv.getContext('2d');
 var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('ovS'),go=d.getElementById('go');
@@ -85,7 +103,7 @@ function end(){
   run=false;cancelAnimationFrame(raf);draw();
   var nb=score>best;if(nb){best=score;try{localStorage.setItem('potatoCornerBest',String(best))}catch(e){}elBest.textContent=best}
   ovT.textContent='時間到';
-  ovS.innerHTML='你的分數 <span class="big">'+score+'</span><br>'+(nb?'新的最高分':'最高分 '+best);
+  ovS.innerHTML='你的分數 <span class="big">'+score+'</span><br>'+(nb?'新的最高分':'最高分 '+best)+pickHtml();
   go.textContent='再玩一次';ov.hidden=false;
 }
 go.addEventListener('click',start);
