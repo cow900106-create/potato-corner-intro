@@ -39,10 +39,10 @@ function drawItem(it){
   else{ctx.font=(s*1.1)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🧂',it.x,it.y);ctx.textBaseline='alphabetic'}
 }
 function drawBox(){
-  if(mok){var ms=box.w*.62,mx=box.x,my=H-box.h-10-ms*.12;ctx.save();ctx.beginPath();ctx.arc(mx,my,ms/2,0,6.2832);ctx.clip();ctx.drawImage(mi,mx-ms/2,my-ms/2,ms,ms);ctx.restore();ctx.lineWidth=3;ctx.strokeStyle='#ffd400';ctx.beginPath();ctx.arc(mx,my,ms/2,0,6.2832);ctx.stroke()}
+  if(mok){var ms=box.w*.62,mx=box.x,my=H-box.h-10-ms*.12;ctx.save();ctx.beginPath();ctx.arc(mx,my,ms/2,0,6.2832);ctx.clip();ctx.drawImage(mi,mx-ms/2,my-ms/2,ms,ms);ctx.restore();ctx.lineWidth=3;ctx.strokeStyle='#fce404';ctx.beginPath();ctx.arc(mx,my,ms/2,0,6.2832);ctx.stroke()}
   var bx=box.x+(box.shake>0?Math.sin(box.shake*60)*3:0),by=H-box.h-10,w=box.w,h=box.h;
-  ctx.fillStyle='#ffd400';ctx.beginPath();ctx.moveTo(bx-w/2,by);ctx.lineTo(bx+w/2,by);ctx.lineTo(bx+w*.4,by+h);ctx.lineTo(bx-w*.4,by+h);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#0b8a3e';ctx.beginPath();ctx.moveTo(bx-w*.44,by+h*.3);ctx.lineTo(bx+w*.44,by+h*.3);ctx.lineTo(bx+w*.4,by+h*.8);ctx.lineTo(bx-w*.4,by+h*.8);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#fce404';ctx.beginPath();ctx.moveTo(bx-w/2,by);ctx.lineTo(bx+w/2,by);ctx.lineTo(bx+w*.4,by+h);ctx.lineTo(bx-w*.4,by+h);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#148c44';ctx.beginPath();ctx.moveTo(bx-w*.44,by+h*.3);ctx.lineTo(bx+w*.44,by+h*.3);ctx.lineTo(bx+w*.4,by+h*.8);ctx.lineTo(bx-w*.4,by+h*.8);ctx.closePath();ctx.fill();
   ctx.fillStyle='#fff';ctx.font='bold '+(h*.2)+'px sans-serif';ctx.textAlign='center';ctx.fillText('Potato',bx,by+h*.5);ctx.fillText('Corner',bx,by+h*.72);
 }
 function draw(){
@@ -65,8 +65,8 @@ function loop(ts){
   for(var i=items.length-1;i>=0;i--){
     var it=items[i];it.y+=it.v*dt;it.r+=it.w*dt;
     if(it.y+it.s*.4>=top&&it.y<top+box.h*.6&&Math.abs(it.x-box.x)<box.w/2+it.s*.15){
-      if(it.t==='fry'){setScore(score+1);pop(it.x,top-6,'+1','#066b2e')}
-      else if(it.t==='salt'){setScore(score+3);pop(it.x,top-6,'+3 風味粉','#0b8a3e');box.shake=.3}
+      if(it.t==='fry'){setScore(score+1);pop(it.x,top-6,'+1','#0b612e')}
+      else if(it.t==='salt'){setScore(score+3);pop(it.x,top-6,'+3 風味粉','#148c44');box.shake=.3}
       else{setScore(score-3);pop(it.x,top-6,'-3 燒焦','#c0392b');box.shake=.4;if(navigator.vibrate)try{navigator.vibrate(60)}catch(_){}}
       items.splice(i,1);
     }else if(it.y>H+it.s){items.splice(i,1)}
