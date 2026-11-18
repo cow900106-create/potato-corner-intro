@@ -1,5 +1,10 @@
 (function(){
 var d=document;d.documentElement.classList.add('js');
+// optional images: show only when the file loads
+[].forEach.call(d.querySelectorAll('img.oi'),function(im){
+  function ok(){im.parentNode.classList.add('has')}
+  if(im.complete&&im.naturalWidth)ok();else{im.addEventListener('load',ok);im.addEventListener('error',function(){im.remove()})}
+});
 // scroll reveal
 var els=[].slice.call(d.querySelectorAll('.rv'));
 if('IntersectionObserver' in window){
@@ -13,7 +18,8 @@ var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('
 var elScore=d.getElementById('score'),elTime=d.getElementById('time'),elBest=d.getElementById('best');
 var W=0,H=0,dpr=1,run=false,left=30,score=0,items=[],pops=[],spawn=0,last=0,raf=0,elapsed=0;
 var box={x:0,w:96,h:56,shake:0};
-var best=0;try{best=parseInt(localStorage.getItem('pcBest')||'0',10)||0}catch(e){}
+var mi=new Image(),mok=false;mi.onload=function(){mok=true;draw()};mi.src='assets/mascot.webp';
+var best=0;try{best=parseInt(localStorage.getItem('potatoCornerBest')||'0',10)||0}catch(e){}
 elBest.textContent=best;
 function size(){
   var w=cv.parentNode.clientWidth;dpr=Math.min(window.devicePixelRatio||1,2);
@@ -33,10 +39,11 @@ function drawItem(it){
   else{ctx.font=(s*1.1)+'px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('🧂',it.x,it.y);ctx.textBaseline='alphabetic'}
 }
 function drawBox(){
+  if(mok){var ms=box.w*.62,mx=box.x,my=H-box.h-10-ms*.12;ctx.save();ctx.beginPath();ctx.arc(mx,my,ms/2,0,6.2832);ctx.clip();ctx.drawImage(mi,mx-ms/2,my-ms/2,ms,ms);ctx.restore();ctx.lineWidth=3;ctx.strokeStyle='#ffd400';ctx.beginPath();ctx.arc(mx,my,ms/2,0,6.2832);ctx.stroke()}
   var bx=box.x+(box.shake>0?Math.sin(box.shake*60)*3:0),by=H-box.h-10,w=box.w,h=box.h;
   ctx.fillStyle='#ffd400';ctx.beginPath();ctx.moveTo(bx-w/2,by);ctx.lineTo(bx+w/2,by);ctx.lineTo(bx+w*.4,by+h);ctx.lineTo(bx-w*.4,by+h);ctx.closePath();ctx.fill();
   ctx.fillStyle='#0b8a3e';ctx.beginPath();ctx.moveTo(bx-w*.44,by+h*.3);ctx.lineTo(bx+w*.44,by+h*.3);ctx.lineTo(bx+w*.4,by+h*.8);ctx.lineTo(bx-w*.4,by+h*.8);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#fff';ctx.font='bold '+(h*.3)+'px sans-serif';ctx.textAlign='center';ctx.fillText('PC',bx,by+h*.63);
+  ctx.fillStyle='#fff';ctx.font='bold '+(h*.2)+'px sans-serif';ctx.textAlign='center';ctx.fillText('Potato',bx,by+h*.5);ctx.fillText('Corner',bx,by+h*.72);
 }
 function draw(){
   ctx.clearRect(0,0,W,H);
@@ -54,7 +61,7 @@ function loop(ts){
   var dt=Math.min((ts-last)/1000,.05);last=ts;
   left-=dt;elapsed+=dt;spawn-=dt;box.shake=Math.max(0,box.shake-dt);
   if(spawn<=0){add();spawn=Math.max(.28,.75-elapsed*.015)}
-  var top=H-box.h-10;
+  var top=H-box.h-10-(mok?box.w*.26:0);
   for(var i=items.length-1;i>=0;i--){
     var it=items[i];it.y+=it.v*dt;it.r+=it.w*dt;
     if(it.y+it.s*.4>=top&&it.y<top+box.h*.6&&Math.abs(it.x-box.x)<box.w/2+it.s*.15){
@@ -76,7 +83,7 @@ function start(){
 }
 function end(){
   run=false;cancelAnimationFrame(raf);draw();
-  var nb=score>best;if(nb){best=score;try{localStorage.setItem('pcBest',String(best))}catch(e){}elBest.textContent=best}
+  var nb=score>best;if(nb){best=score;try{localStorage.setItem('potatoCornerBest',String(best))}catch(e){}elBest.textContent=best}
   ovT.textContent='時間到';
   ovS.innerHTML='你的分數 <span class="big">'+score+'</span><br>'+(nb?'新的最高分':'最高分 '+best);
   go.textContent='再玩一次';ov.hidden=false;
