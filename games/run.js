@@ -284,12 +284,6 @@ function crash(){
 }
 
 /* -------- draw helpers -------- */
-function uhash(n){
-  n|=0;
-  n=(n*374761393+668265263)|0;
-  n=(n^(n>>>13))*1274126177;
-  return ((n^(n>>>16))>>>0)/4294967296;
-}
 function rr(x,y,w,h,r){
   ctx.beginPath();
   if(ctx.roundRect)ctx.roundRect(x,y,w,h,r);
@@ -357,17 +351,6 @@ function drawSky(){
   // sun
   ctx.fillStyle='#fce404';
   ctx.beginPath();ctx.arc(W*0.78,horizon*0.42,H*0.055,0,6.2832);ctx.fill();
-  // distant mall silhouette just on the horizon
-  ctx.save();
-  ctx.globalAlpha=0.28;
-  ctx.fillStyle='#0b4a24';
-  var hx=W*0.08,hy=horizon,bw=W*0.12;
-  for(var i=0;i<9;i++){
-    var bh=8+uhash(i+11)*22;
-    ctx.fillRect(hx,hy-bh,bw*0.9,bh);
-    hx+=bw*0.95;
-  }
-  ctx.restore();
 }
 
 function drawRoad(){
@@ -418,122 +401,6 @@ function drawRoad(){
       ctx.beginPath();ctx.moveTo(p0.x,p0.y);ctx.lineTo(p1.x,p1.y);ctx.stroke();
     }
   }
-}
-
-/* food-court stalls & mall blocks along both shoulders */
-function collectBuildings(){
-  var list=[],spacing=4.0;
-  var zStart=Math.floor((camZ+2)/spacing)*spacing;
-  var zEnd=camZ+FAR;
-  for(var zw=zEnd;zw>=zStart;zw-=spacing){
-    var rel=zw-camZ;
-    if(rel<2||rel>FAR)continue;
-    var seed=Math.round(zw/spacing);
-    list.push({typ:'bldg',row:'mall',side:-1,z:zw,rel:rel,seed:seed+17});
-    list.push({typ:'bldg',row:'mall',side: 1,z:zw,rel:rel,seed:seed+91});
-    list.push({typ:'bldg',row:'stall',side:-1,z:zw+spacing*0.45,rel:zw+spacing*0.45-camZ,seed:seed+3});
-    list.push({typ:'bldg',row:'stall',side: 1,z:zw+spacing*0.45,rel:zw+spacing*0.45-camZ,seed:seed+53});
-  }
-  return list;
-}
-
-var STALL_PAL=[
-  {f:'#fff6e8',s:'#c9b089',t:'#f7ecd4',a:'#c0392b',si:'#fce404'},
-  {f:'#fffdf2',s:'#b8a56a',t:'#fce404',a:'#148c44',si:'#fff6bf'},
-  {f:'#f3efe4',s:'#9a8a68',t:'#e8d9b0',a:'#d35400',si:'#fce404'},
-  {f:'#eef8f0',s:'#7aa07a',t:'#d6eedb',a:'#0b612e',si:'#fff6bf'},
-  {f:'#fff3d6',s:'#c4a24a',t:'#ffe9a3',a:'#c41e3a',si:'#148c44'}
-];
-var MALL_PAL=[
-  {f:'#d9e8d4',s:'#8aa58a',t:'#eef6ec'},
-  {f:'#efe6d2',s:'#b09a72',t:'#f7f0e2'},
-  {f:'#cfd8c8',s:'#7d8c78',t:'#e4ece0'},
-  {f:'#e8dcc4',s:'#a89470',t:'#f4ead6'}
-];
-
-function drawBuilding(b){
-  if(b.rel<2||b.rel>FAR)return;
-  var fade=b.rel>FAR-12?Math.max(0,(FAR-b.rel)/12):1;
-  ctx.save();ctx.globalAlpha=fade;
-  if(b.row==='mall')drawMall(b);
-  else drawStall(b);
-  ctx.restore();
-}
-
-function drawMall(b){
-  var h=3.2+uhash(b.seed)*3.4;
-  var w=2.0+uhash(b.seed+1)*1.4;
-  var x=b.side*(roadHalf()+2.15+w*0.5);
-  var pal=MALL_PAL[b.seed%MALL_PAL.length];
-  var gnd=proj(x,0,b.rel);
-  var top=proj(x,h,b.rel);
-  var pw=w*gnd.s,ph=gnd.y-top.y;
-  if(pw<4||ph<4)return;
-  drawPrism(gnd.x,gnd.y,pw,ph,gnd.s,pal.f,pal.s,pal.t,{depth:0.7,dir:b.side});
-  // window grid
-  var cols=2+((b.seed>>2)&1),rows=2+((b.seed>>3)&2);
-  ctx.fillStyle='rgba(40,70,50,0.28)';
-  var m=pw*0.12,gw=(pw-m*2)/cols,gh=(ph*0.7)/rows;
-  var y0=gnd.y-ph+ph*0.12;
-  for(var r=0;r<rows;r++){
-    for(var c=0;c<cols;c++){
-      ctx.fillRect(gnd.x-pw/2+m+c*gw+gw*0.15,y0+r*(gh+2)+2,gw*0.7,gh*0.7);
-    }
-  }
-}
-
-function drawStall(b){
-  var h=1.55+uhash(b.seed)*1.6;
-  var w=1.35+uhash(b.seed+2)*0.9;
-  var x=b.side*(roadHalf()+0.28+w*0.5);
-  var pal=STALL_PAL[b.seed%STALL_PAL.length];
-  var gnd=proj(x,0,b.rel);
-  var top=proj(x,h,b.rel);
-  var pw=w*gnd.s,ph=Math.max(8,gnd.y-top.y);
-  if(pw<6)return;
-  // body
-  drawPrism(gnd.x,gnd.y,pw,ph,gnd.s,pal.f,pal.s,pal.t,{depth:0.5,dir:b.side});
-  // counter (lower lip toward the road)
-  var cw=pw*1.02,ch=ph*0.22;
-  var cx=gnd.x-b.side*pw*0.06;
-  drawPrism(cx,gnd.y,cw,ch,gnd.s,'#d9c49a','#8a7040','#efe0c0',{depth:0.28,dir:b.side});
-  // awning hanging toward the road
-  var aw=pw*1.15,ah=Math.max(6,ph*0.16);
-  var ax=gnd.x-b.side*pw*0.08;
-  var ay=gnd.y-ph+ah*0.15;
-  drawPrism(ax,ay,aw,ah,gnd.s,pal.a,shade(pal.a,0.65),tint(pal.a,0.25),{depth:0.35,dir:b.side});
-  // awning stripes
-  ctx.save();
-  ctx.globalAlpha=0.22;
-  ctx.fillStyle='#fff';
-  var stripes=4;
-  for(var i=0;i<stripes;i++){
-    if(i%2)ctx.fillRect(ax-aw/2+(i/stripes)*aw,ay-ah,aw/stripes,ah);
-  }
-  ctx.restore();
-  // sign board
-  var sw=pw*0.55,sh=Math.max(6,ph*0.18);
-  ctx.fillStyle=pal.si;
-  rr(gnd.x-sw/2,gnd.y-ph-sh*0.85,sw,sh,2);
-  ctx.fill();
-  ctx.strokeStyle='rgba(20,30,20,0.35)';
-  ctx.lineWidth=1;ctx.stroke();
-  // window
-  ctx.fillStyle='rgba(40,70,80,0.2)';
-  var ww=pw*0.55,wh=ph*0.38;
-  ctx.fillRect(gnd.x-ww/2,gnd.y-ph*0.72,ww,wh);
-}
-
-function shade(hex,k){
-  var n=parseInt(hex.slice(1),16);
-  var r=((n>>16)&255)*k,g=((n>>8)&255)*k,b=(n&255)*k;
-  return 'rgb('+((r)|0)+','+((g)|0)+','+((b)|0)+')';
-}
-function tint(hex,p){
-  var n=parseInt(hex.slice(1),16);
-  var r=((n>>16)&255),g=((n>>8)&255),b=(n&255);
-  r=r+(255-r)*p;g=g+(255-g)*p;b=b+(255-b)*p;
-  return 'rgb('+(r|0)+','+(g|0)+','+(b|0)+')';
 }
 
 /* -------- obstacles -------- */
@@ -784,9 +651,8 @@ function drawPlayer(){
   var ch=cw*1.48;
   var phase=camZ*2.55;
   var onGround=player.y<=0.02&&player.state!=='roll';
-  var bounce=onGround&&player.state==='run'?(Math.sin(phase)*0.5+0.5)*0.04*ch:0;
+  var bounce=onGround&&player.state==='run'?(Math.sin(phase)*0.5+0.5)*0.03*ch:0;
   var sx=1,sy=1,rot=player.tilt;
-  if(player.state==='run'&&onGround)rot+=Math.sin(phase)*0.05;
   if(player.state==='jump'){
     if(player.vy>0){sx=0.92;sy=1.08;rot=player.tilt-0.12}
     else{sx=0.97;sy=1.03;rot=player.tilt+0.08}
@@ -818,8 +684,7 @@ function drawPotatoBack(w,h,phase,state){
   var bodyW=w*0.86,bodyH=h*0.76;
   var cx=0,cy=-h*0.54;
   var swing=0,step=0;
-  if(state==='run'){swing=Math.sin(phase);step=Math.sin(phase)}
-  else if(state==='jump'){swing=0.85;step=0.35}
+  if(state==='jump'){swing=0.85;step=0}
   else if(state==='roll'){swing=0.2;step=0}
   var lw=Math.max(1.8,w*0.038);
   ctx.lineJoin='round';ctx.lineCap='round';
@@ -923,11 +788,10 @@ function drawPotatoBack(w,h,phase,state){
   arm(-1, swing, leftBack);
   arm( 1,-swing, !leftBack);
 
-  // both shoes once: lifted foot shows the sole toward camera
-  var leftLift=state==='jump'?0.25:Math.max(0,-step);
-  var rightLift=state==='jump'?0.45:Math.max(0,step);
-  shoe(-1,leftLift,leftLift>0.35);
-  shoe(1,rightLift,rightLift>0.35);
+  // green shoes stay planted; only a slight tuck when jumping
+  var lift=state==='jump'?0.18:0;
+  shoe(-1,lift,false);
+  shoe(1,lift,false);
 }
 
 /* -------- frame -------- */
@@ -936,14 +800,12 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   drawSky();
   drawRoad();
-  var bld=collectBuildings();
-  var list=objs.concat(bld).sort(function(a,b){return b.z-a.z});
+  var list=objs.slice().sort(function(a,b){return b.z-a.z});
   var pz=camZ+NEAR;
   var drawnP=false;
   for(var i=0;i<list.length;i++){
     if(!drawnP&&list[i].z<pz){drawPlayer();drawnP=true}
-    if(list[i].typ==='bldg')drawBuilding(list[i]);
-    else drawObj(list[i]);
+    drawObj(list[i]);
   }
   if(!drawnP)drawPlayer();
   pops.forEach(function(p){
