@@ -7,7 +7,7 @@ var elMoney=d.getElementById('money'),elLost=d.getElementById('lost'),elHearts=d
 var elCusts=d.getElementById('custs');
 var elRaws=d.getElementById('raws'),elFryers=d.getElementById('fryers'),elFlavs=d.getElementById('flavs');
 var elPlates=d.getElementById('plates'),elServes=d.getElementById('serves'),elDrinks=d.getElementById('drinks');
-var trashBtn=d.getElementById('trashBtn'),pauseBtn=d.getElementById('pauseBtn');
+var trashBtn=d.getElementById('trashBtn'),pauseBtn=d.getElementById('pauseBtn'),muteBtn=d.getElementById('muteBtn');
 var KEY='pcGameShopBest';
 var best=G.getBest(KEY);
 var SEATS=4;
@@ -51,6 +51,235 @@ function nextId(){return uid++}
 function preventPage(e){if(ov&&!ov.hidden)return;e.preventDefault()}
 wrap.addEventListener('touchmove',preventPage,{passive:false});
 
+var MUTE_KEY='pcGameShopMuted';
+var actx=null,master=null,meter=null,meterData=null,sizzles=[null,null,null],pourOff=0,unlocked=false;
+var muted=false;
+try{muted=localStorage.getItem(MUTE_KEY)==='1'}catch(e){}
+function unlockAudio(){
+  var AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return null;
+  if(!actx){
+    actx=new AC();
+    master=actx.createGain();
+    master.gain.value=muted?0:0.9;
+    master.connect(actx.destination);
+    meter=actx.createAnalyser();
+    meter.fftSize=2048;
+    meterData=new Uint8Array(meter.fftSize);
+    master.connect(meter);
+  }
+  if(actx.state==='suspended')actx.resume();
+  unlocked=true;
+  return actx;
+}
+function syncMuteBtn(){
+  if(!muteBtn)return;
+  muteBtn.setAttribute('aria-pressed', muted?'true':'false');
+  muteBtn.setAttribute('aria-label', muted?'已靜音，點擊開啟音效':'音效開啟，點擊靜音');
+  muteBtn.title=muted?'已靜音':'音效開';
+  muteBtn.textContent=muted?'靜音':'聲音';
+}
+function setMuted(on){
+  muted=!!on;
+  try{localStorage.setItem(MUTE_KEY, muted?'1':'0')}catch(e){}
+  if(master){
+    var t=actx?actx.currentTime:0;
+    master.gain.cancelScheduledValues(t);
+    master.gain.setValueAtTime(muted?0:0.9, t);
+  }
+  syncMuteBtn();
+}
+function toggleMute(e){
+  if(e)e.stopPropagation();
+  unlockAudio();
+  setMuted(!muted);
+}
+function noiseBuf(sec){
+  var n=Math.max(1,Math.floor(actx.sampleRate*sec));
+  var b=actx.createBuffer(1,n,actx.sampleRate);
+  var d=b.getChannelData(0);
+  for(var i=0;i<n;i++)d[i]=Math.random()*2-1;
+  return b;
+}
+function connectOut(node){node.connect(master)}
+function env(g,t,peak,atk,hold,rel){
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(peak,t+atk);
+  g.gain.setValueAtTime(peak,t+atk+hold);
+  g.gain.exponentialRampToValueAtTime(0.0008,t+atk+hold+rel);
+}
+function oscTone(type,freq,freq2,dur,peak,atk){
+  if(!unlockAudio()||!master)return;
+  var t=actx.currentTime;
+  var o=actx.createOscillator();
+  o.type=type;o.frequency.setValueAtTime(freq,t);
+  if(freq2!=null)o.frequency.exponentialRampToValueAtTime(Math.max(20,freq2),t+dur);
+  var g=actx.createGain();
+  env(g,t,peak,atk||0.01,Math.max(0,dur-0.08-(atk||0.01)),0.08);
+  o.connect(g);connectOut(g);o.start(t);o.stop(t+dur+0.05);
+}
+function noiseShot(dur,peak,hp,lp,q){
+  if(!unlockAudio()||!master)return;
+  var t=actx.currentTime;
+  var src=actx.createBufferSource();
+  src.buffer=noiseBuf(Math.max(0.08,dur));
+  var f=actx.createBiquadFilter();
+  f.type='bandpass';
+  f.frequency.value=hp||1800;
+  f.Q.value=q||0.8;
+  if(lp){
+    var l=actx.createBiquadFilter();
+    l.type='lowpass';l.frequency.value=lp;
+    src.connect(f);f.connect(l);
+    var g=actx.createGain();
+    env(g,t,peak,0.008,Math.max(0,dur-0.05),0.06);
+    l.connect(g);connectOut(g);
+  }else{
+    var g=actx.createGain();
+    env(g,t,peak,0.008,Math.max(0,dur-0.05),0.06);
+    src.connect(f);f.connect(g);connectOut(g);
+  }
+  src.start(t);src.stop(t+dur+0.05);
+}
+function sfxDrop(){
+  if(!unlockAudio())return;
+  var t=actx.currentTime;
+  oscTone('sine',180,70,0.16,0.28,0.005);
+  noiseShot(0.22,0.22,900,2400,0.6);
+  noiseShot(0.35,0.12,3200,8000,1.2);
+}
+function sfxPowder(){
+  if(!unlockAudio())return;
+  var t=actx.currentTime;
+  for(var i=0;i<5;i++){
+    (function(delay){
+      var src=actx.createBufferSource();
+      src.buffer=noiseBuf(0.12);
+      var f=actx.createBiquadFilter();
+      f.type='bandpass';f.frequency.value=3500+Math.random()*2500;f.Q.value=1.6;
+      var g=actx.createGain();
+      var tt=t+delay;
+      env(g,tt,0.1,0.005,0.03,0.07);
+      src.connect(f);f.connect(g);connectOut(g);
+      src.start(tt);src.stop(tt+0.15);
+    })(i*0.05);
+  }
+}
+function sfxPour(){
+  if(!unlockAudio())return;
+  var t=actx.currentTime;
+  pourOff=t+1.5;
+  var src=actx.createBufferSource();
+  src.buffer=noiseBuf(1.6);src.loop=false;
+  var f=actx.createBiquadFilter();
+  f.type='bandpass';f.Q.value=0.9;
+  f.frequency.setValueAtTime(1400,t);
+  f.frequency.exponentialRampToValueAtTime(700,t+1.35);
+  var g=actx.createGain();
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(0.16,t+0.08);
+  g.gain.setValueAtTime(0.14,t+1.15);
+  g.gain.exponentialRampToValueAtTime(0.0008,t+1.5);
+  src.connect(f);f.connect(g);connectOut(g);
+  src.start(t);src.stop(t+1.55);
+}
+function sfxDing(){
+  if(!unlockAudio())return;
+  oscTone('sine',1320,1320,0.18,0.2,0.005);
+  oscTone('sine',1760,1760,0.22,0.16,0.008);
+}
+function sfxCoins(){
+  if(!unlockAudio())return;
+  var t=actx.currentTime;
+  [0,0.07,0.14,0.22].forEach(function(dt,i){
+    var o=actx.createOscillator();
+    o.type='square';
+    o.frequency.setValueAtTime(1800+i*220,t+dt);
+    o.frequency.exponentialRampToValueAtTime(900+i*80,t+dt+0.09);
+    var f=actx.createBiquadFilter();f.type='bandpass';f.frequency.value=2200;f.Q.value=4;
+    var g=actx.createGain();
+    env(g,t+dt,0.07,0.004,0.03,0.06);
+    o.connect(f);f.connect(g);connectOut(g);
+    o.start(t+dt);o.stop(t+dt+0.14);
+  });
+}
+function sfxLeave(){
+  if(!unlockAudio())return;
+  oscTone('triangle',320,90,0.32,0.18,0.02);
+  oscTone('sawtooth',180,70,0.4,0.08,0.03);
+}
+function sfxOver(){
+  if(!unlockAudio())return;
+  if(!actx)return;
+  var t=actx.currentTime;
+  [392,311,247].forEach(function(freq,i){
+    var o=actx.createOscillator();
+    o.type='triangle';o.frequency.value=freq;
+    var g=actx.createGain();
+    var tt=t+i*0.28;
+    env(g,tt,0.16,0.02,0.22,0.18);
+    o.connect(g);connectOut(g);o.start(tt);o.stop(tt+0.5);
+  });
+}
+function startSizzle(i,state){
+  if(!unlockAudio()||!master)return;
+  var gain=state==='burnt'?0.045:(state==='ready'?0.035:0.05);
+  var freq=state==='burnt'?1800:2800;
+  if(sizzles[i]){
+    var n=sizzles[i];
+    var t=actx.currentTime;
+    n.gain.gain.setTargetAtTime(gain,t,0.15);
+    n.filt.frequency.setTargetAtTime(freq,t,0.15);
+    return;
+  }
+  var src=actx.createBufferSource();
+  src.buffer=noiseBuf(1.2);src.loop=true;
+  var filt=actx.createBiquadFilter();
+  filt.type='bandpass';filt.frequency.value=freq;filt.Q.value=0.7;
+  var hp=actx.createBiquadFilter();
+  hp.type='highpass';hp.frequency.value=800;
+  var g=actx.createGain();
+  g.gain.value=gain;
+  var lfo=actx.createOscillator();
+  lfo.type='sine';lfo.frequency.value=8+i*1.3;
+  var lg=actx.createGain();lg.gain.value=gain*0.25;
+  lfo.connect(lg);lg.connect(g.gain);
+  src.connect(hp);hp.connect(filt);filt.connect(g);connectOut(g);
+  src.start();lfo.start();
+  sizzles[i]={src:src,filt:filt,gain:g,lfo:lfo,lg:lg};
+}
+function stopSizzle(i){
+  var n=sizzles[i];
+  if(!n)return;
+  try{n.src.stop()}catch(e){}
+  try{n.lfo.stop()}catch(e){}
+  try{n.src.disconnect();n.filt.disconnect();n.gain.disconnect();n.lfo.disconnect();n.lg.disconnect()}catch(e){}
+  sizzles[i]=null;
+}
+function stopAllSfx(){
+  for(var i=0;i<sizzles.length;i++)stopSizzle(i);
+}
+function syncSizzle(){
+  if(!fryers||!fryers.length){stopAllSfx();return}
+  fryers.forEach(function(f,i){
+    if(f.state==='cook'||f.state==='ready'||f.state==='burnt')startSizzle(i,f.state);
+    else stopSizzle(i);
+  });
+}
+function sfxPeak(){
+  if(!meter||!meterData)return 0;
+  meter.getByteTimeDomainData(meterData);
+  var p=0;
+  for(var i=0;i<meterData.length;i++){
+    var v=Math.abs(meterData[i]-128)/128;
+    if(v>p)p=v;
+  }
+  return p;
+}
+var SFX={drop:sfxDrop,sizzle:function(){startSizzle(0,'cook')},powder:sfxPowder,pour:sfxPour,ding:sfxDing,coins:sfxCoins,leave:sfxLeave,over:sfxOver};
+syncMuteBtn();
+
+
 function icon(src,cls){return '<img src="'+src+'" alt="" draggable="false"'+(cls?' class="'+cls+'"':'')+'>'}
 function drinkOf(it){return (it&&DRINKS[it.drink])?DRINKS[it.drink]:DRINKS.cola}
 function itemImg(it){return it.type==='drink'?drinkOf(it).img:FOOD[it.type].img}
@@ -86,8 +315,10 @@ function resetRound(){
   sel=null;custs=[];coins=[];
   elMoney.textContent='$'+money;
   syncLives();
+  stopAllSfx();
   buildStations();
   render();
+  syncSizzle();
 }
 
 function buildStations(){
@@ -110,6 +341,7 @@ function startFry(food){
   for(var i=0;i<fryers.length;i++){
     if(fryers[i].state==='empty'){
       fryers[i].food=food;fryers[i].t=0;fryers[i].state='cook';
+      sfxDrop();syncSizzle();
       render();return;
     }
   }
@@ -124,10 +356,12 @@ function tapFryer(i){
     if(slot<0){toast('待調味區滿了');return}
     plates[slot]={id:nextId(),type:f.food,flavor:null,shaking:0};
     f.food=null;f.t=0;f.state='empty';
+    syncSizzle();
     render();return;
   }
   if(f.state==='burnt'){
     f.food=null;f.t=0;f.state='empty';
+    syncSizzle();
     render();return;
   }
 }
@@ -147,6 +381,7 @@ function pickFlav(k){
   }
   if(slot<0){toast('先把炸好的放到待調味紙杯');return}
   plates[slot].flavor=k;plates[slot].shaking=0.55;
+  sfxPowder();
   render();
 }
 
@@ -161,7 +396,7 @@ function takeDrink(i){
     render();return;
   }
   if(m.t>=0)return;
-  m.t=0;render();
+  m.t=0;sfxPour();render();
 }
 
 function trash(){
@@ -208,12 +443,14 @@ function serveTo(c, it, idx){
   c.order[match].done=1;
   removeFound(findItem(it.id));
   sel=null;
+  sfxDing();
   var leftover=c.order.filter(function(o){return !o.done});
   if(leftover.length===0){
     var price=0;
     c.order.forEach(function(o){price+=FOOD[o.type].price});
     var tip=Math.round(price*0.28*(c.patience/c.maxP));
     addMoney(price+tip);
+    sfxCoins();
     toast('+$'+(price+tip)+(tip?(' 含小費 $'+tip):''));
     spawnCoins(c.slot);
     c.leave='ok';c.leaveT=0.7;
@@ -293,7 +530,7 @@ function update(dt){
       f.t+=dt;
       if(f.t>=cfg.burn)f.state='burnt';
       else if(f.t>=cfg.cook)f.state='ready';
-      if(f.state!==prev)mark();
+      if(f.state!==prev){syncSizzle();mark();}
     }
   });
   plates.forEach(function(p,i){
@@ -303,7 +540,7 @@ function update(dt){
       var slot=-1;for(var s=0;s<serves.length;s++)if(!serves[s]){slot=s;break}
       if(slot<0){p.shaking=0.1;return}
       serves[slot]={id:p.id,type:p.type,flavor:p.flavor};
-      plates[i]=null;mark();
+      plates[i]=null;sfxDing();mark();
     }
   });
   drinks.forEach(function(m,i){
@@ -320,7 +557,7 @@ function update(dt){
     c.patience-=dt;
     if(c.patience<=0){
       c.leave='gone';c.leaveT=0.55;lost+=1;syncLives();
-      toast('客人走了');mark();
+      sfxLeave();toast('客人走了');mark();
       if(lost>=3)pendingOver=0.45;
     }
   });
@@ -415,16 +652,11 @@ function render(){
     var pct=0;
     if(st==='cook')pct=Math.min(100,(f.t/cfg.cook)*100);
     else if(st==='ready'||st==='burnt')pct=100;
-    var src=st==='burnt'?IMG+'fryer-wide-burnt.webp':((st==='cook'||st==='ready')?IMG+'fryer-wide-cook.webp':IMG+'fryer-wide-empty.webp');
-    var cook=st==='cook'?Math.min(1,f.t/cfg.cook):(st==='ready'||st==='burnt'?1:0);
-    var oil='';
-    if(f.food&&st!=='empty'){
-      var oilSrc=IMG+'oil-'+f.food+'-'+(st==='burnt'?'burnt':'gold')+'.webp';
-      oil='<img class="oil-food" src="'+oilSrc+'" alt="" draggable="false">'
-        +'<span class="bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>'
-        +'<span class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
-    }
-    return '<button class="cell fryer '+st+'" data-i="'+i+'" type="button" style="--cook:'+cook.toFixed(3)+'"><span class="ring" style="--p:'+pct+'"></span><img class="art" src="'+src+'" alt="" draggable="false">'+oil+'<span class="plab">'+lab+'</span></button>';
+    var art=(!f.food||st==='empty')?IMG+'fryer-basket-empty.webp':(IMG+'fryer-'+f.food+'-'+(st==='burnt'?'burnt':(st==='ready'?'ready':'cook'))+'.webp');
+    var fx='<span class="bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>'
+      +'<span class="heat" aria-hidden="true"><i></i><i></i><i></i></span>'
+      +'<span class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+    return '<button class="cell fryer '+st+'" data-i="'+i+'" type="button"><span class="ring" style="--p:'+pct+'"></span><img class="art" src="'+art+'" alt="" draggable="false">'+fx+'<span class="plab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elFryers.querySelectorAll('.fryer'),function(btn){
     btn.addEventListener('click',function(){tapFryer(+btn.getAttribute('data-i'))});
@@ -549,7 +781,7 @@ function showHud(on){
 }
 function pauseGame(){
   if(!run)return;
-  run=false;cancelAnimationFrame(raf);
+  run=false;cancelAnimationFrame(raf);stopAllSfx();
   ov.classList.remove('runstart','shopstart');if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
   showHud(false);
   ovT.textContent='暫停中';ovS.textContent='點按鈕再開始';
@@ -557,6 +789,7 @@ function pauseGame(){
 }
 
 function start(){
+  unlockAudio();
   money=0;lost=0;pendingOver=0;run=true;ov.hidden=true;ov.classList.remove('runstart','shopstart');
   if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
   showHud(true);
@@ -567,7 +800,7 @@ function start(){
 }
 
 function pauseEnd(title,msg,again){
-  run=false;cancelAnimationFrame(raf);
+  run=false;cancelAnimationFrame(raf);stopAllSfx();
   toastT=0;toastMsg='';
   var tip=d.getElementById('toast');
   if(tip){tip.textContent='';tip.className='toast'}
@@ -579,18 +812,24 @@ function pauseEnd(title,msg,again){
 }
 
 function gameOver(){
+  stopAllSfx();sfxOver();
   var nb=money>best;if(nb){best=money;G.setBest(KEY,best)}
   pauseEnd('客人走光了','營業額 <span class="big">$'+money+'</span><br>'+(nb?'新的最高分！':'最高分 $'+best)+G.pickHtml(),'再玩一次');
 }
 
 go.addEventListener('click',function(){
+  unlockAudio();
   start();
 });
+function firstUnlock(){unlockAudio();d.removeEventListener('pointerdown',firstUnlock,true)}
+d.addEventListener('pointerdown',firstUnlock,true);
+if(muteBtn)muteBtn.addEventListener('click',toggleMute);
+
 if(trashBtn)trashBtn.addEventListener('click',trash);
 if(pauseBtn)pauseBtn.addEventListener('click',pauseGame);
 d.addEventListener('visibilitychange',function(){
   if(d.hidden&&run){
-    run=false;cancelAnimationFrame(raf);
+    run=false;cancelAnimationFrame(raf);stopAllSfx();
     ov.classList.remove('runstart','shopstart');if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
     showHud(false);
     ovT.textContent='暫停中';ovS.textContent='回到頁面後再開始';
@@ -664,7 +903,18 @@ window.PCShop={
     for(var i=0;i<drinks.length;i++)if(drinks[i].cup&&autoServeItem(drinks[i].cup))return;
   },
   end:function(){lost=3;syncLives();gameOver();},
-  info:function(){return {run:run,money:money,lost:lost,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}}
+  info:function(){return {run:run,money:money,lost:lost,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}},
+  sfx:{
+    unlock:unlockAudio,
+    play:function(name){if(SFX[name])SFX[name]()},
+    names:['drop','sizzle','powder','pour','ding','coins','leave','over'],
+    muted:function(){return muted},
+    setMuted:setMuted,
+    ctxState:function(){return actx?actx.state:'none'},
+    sizzleActive:function(){return sizzles.map(function(n){return !!n})},
+    peak:sfxPeak,
+    key:MUTE_KEY
+  }
 };
 
 lost=0;money=0;resetRound();

@@ -114,7 +114,9 @@ body.play.shoppage .stagewrap{position:absolute;inset:0;width:100%;height:100%;m
 body.play.shoppage.playing .shop-tophud[hidden]{display:flex!important;visibility:visible;pointer-events:none}
 body.play.shoppage.playing .shop-tophud[hidden] > *{pointer-events:auto}
 .shopback{color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:5px 10px;border-radius:99px;background:rgba(0,0,0,.38);z-index:2}
-.hud-pause{appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;border-radius:99px;padding:5px 10px;cursor:pointer;font-family:inherit;z-index:2}
+.hud-pause{appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;border-radius:99px;padding:5px 10px;cursor:pointer;font-family:inherit;z-index:2;margin-right:58px}
+.shop-stage .hud-mute{position:absolute;top:4px;right:8px;top:calc(4px + env(safe-area-inset-top,0px));z-index:34;appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;line-height:1;border-radius:99px;padding:5px 10px;cursor:pointer;font-family:inherit;pointer-events:auto}
+.shop-stage .hud-mute[aria-pressed="true"]{background:rgba(80,20,20,.7);color:#fce404}
 .hud-pause[hidden]{display:none}
 body.play.shoppage.playing .hud-pause{display:block}
 .hud-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;background:rgba(8,50,22,.72);border-radius:99px;padding:4px 14px 4px 12px;box-shadow:0 2px 0 rgba(0,0,0,.25);color:#fff;font-size:11px;font-weight:800;white-space:nowrap;pointer-events:none}
@@ -205,16 +207,28 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .raw img,.shop-stage .flav img{width:100%;height:96%;object-fit:contain}
 
 .shop-stage .fryer{--cook:1}
-.shop-stage .fryer .art{z-index:1}
-.shop-stage .fryer .oil-food{
-  position:absolute;left:50%;top:50%;width:112%;height:112%;
-  transform:translate(-50%,-50%);margin:0;
-  object-fit:cover;pointer-events:none;z-index:2;
-  max-width:none;max-height:none;
-  filter:brightness(calc(1.32 - 0.32 * var(--cook,1))) saturate(calc(0.55 + 0.45 * var(--cook,1))) hue-rotate(calc((1 - var(--cook,1)) * -12deg));
+.shop-stage .fryer .art{z-index:1;object-fit:cover;width:122%;height:122%;object-position:70% 48%}
+.shop-stage .fryer.ready .art{transform:translateY(-2px)}
+.shop-stage .fryer .oil-food{display:none}
+.shop-stage .fryer .heat{
+  position:absolute;left:12%;right:12%;top:6%;height:42%;margin:0;
+  pointer-events:none;z-index:3;display:none;overflow:hidden;
 }
-.shop-stage .fryer.ready .oil-food,
-.shop-stage .fryer.burnt .oil-food{filter:none}
+.shop-stage .fryer.cook .heat,
+.shop-stage .fryer.ready .heat{display:block}
+.shop-stage .fryer .heat i{
+  position:absolute;bottom:0;width:28%;height:70%;margin:0;border-radius:50%;
+  background:rgba(255,255,255,.16);filter:blur(7px);
+  animation:heatrise 1.7s ease-in infinite;
+}
+.shop-stage .fryer .heat i:nth-child(1){left:10%;animation-delay:0s}
+.shop-stage .fryer .heat i:nth-child(2){left:38%;width:22%;animation-delay:.4s;animation-duration:2s}
+.shop-stage .fryer .heat i:nth-child(3){left:62%;animation-delay:.8s}
+@keyframes heatrise{
+  0%{transform:translateY(20%) scale(.8);opacity:0}
+  25%{opacity:.5}
+  100%{transform:translateY(-90%) scale(1.2);opacity:0}
+}
 .shop-stage .fryer .bubbles,
 .shop-stage .fryer .smoke{
   position:absolute;left:9%;right:9%;top:16%;bottom:28%;
