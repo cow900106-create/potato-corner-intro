@@ -112,14 +112,25 @@ canvas#stage{display:block;width:100%;height:100%;touch-action:none;-webkit-user
 .mcard .inner{transition:none}
 }
 
-/* run menu badge + start overlay + lock scroll */
+/* run menu badge */
 .gcard h2 .new{display:inline-block;background:var(--g);color:var(--y);font-size:12px;font-weight:900;border-radius:99px;padding:1px 8px;vertical-align:middle;margin-left:4px;line-height:1.6}
+
+/* run fullscreen shell */
+html.runpage{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none}
+body.play.runpage{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#0e5a2c}
+body.play.runpage .stagewrap{position:absolute;inset:0;width:100vw;height:100%;height:100dvh;max-width:none;margin:0;border-radius:0;box-shadow:none;align-self:auto;background:#0e5a2c}
 body.play.runpage,body.play.runpage .stagewrap,body.play.runpage canvas#stage{touch-action:none;overscroll-behavior:none}
-.overlay.runstart{background:linear-gradient(180deg,rgba(6,70,28,.42),rgba(6,50,22,.72)),url("img/start-bg.jpg") center/cover no-repeat;justify-content:flex-end;padding:16px 16px 22px}
+body.play.runpage .runback{position:absolute;z-index:40;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));color:#fff;text-decoration:none;font-weight:700;font-size:13px;line-height:1;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.36)}
+body.play.runpage .runhud{position:absolute;z-index:35;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 14px;padding:0 12px 0 72px;box-sizing:border-box;font-size:12px;font-weight:700;color:rgba(255,255,255,.86);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+body.play.runpage .runhud b{color:#fce404;font-weight:800}
+body.play.runpage .runhud[hidden]{display:none!important}
+body.play.runpage .overlay{padding:18px 16px;padding-top:calc(52px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.overlay.runstart{background:linear-gradient(180deg,rgba(6,70,28,.42),rgba(6,50,22,.72)),url("img/start-bg.jpg") center/cover no-repeat;justify-content:flex-end}
 .overlay .ovlogo{height:44px;width:auto;background:#fff;border-radius:12px;padding:5px 10px;margin-bottom:2px}
 .how{width:100%;max-width:330px;background:rgba(6,50,20,.78);border-radius:16px;padding:10px 14px;text-align:left;font-weight:700;font-size:14px;line-height:1.55}
 .how div{display:flex;gap:8px;align-items:flex-start;margin:4px 0}
 .how span{flex:none;min-width:28px;color:var(--y)}
+body.play.runpage .overlay .fine{flex:none;margin:10px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 
 /* shop manager */
 .hud4{font-size:13px;flex-wrap:wrap}

@@ -2,7 +2,7 @@
 var d=document,G=window.PCGames;
 var cv=d.getElementById('stage'),ctx=cv.getContext('2d');
 var wrap=d.getElementById('wrap');
-var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('ovS'),go=d.getElementById('go'),how=d.getElementById('how'),ovlogo=d.getElementById('ovlogo');
+var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('ovS'),go=d.getElementById('go'),how=d.getElementById('how'),ovlogo=d.getElementById('ovlogo'),hud=d.getElementById('hud'),fine=d.getElementById('fine');
 var elScore=d.getElementById('score'),elDist=d.getElementById('dist'),elBest=d.getElementById('best');
 var KEY='pcGameRunBest',KEYD='pcGameRunBestDist';
 var W=0,H=0,dpr=1,focal=1,horizon=0,camH=1.8;
@@ -414,7 +414,6 @@ function drawObj(o){
     var wy=o._above?0.95:0.45;
     var p=proj(lx,wy,rel);
     var sz=Math.max(14,0.36*p.s);
-    p.y-=Math.sin(camZ*3+o.z)*0.05*p.s;
     // soft disc behind icon so it reads as a collectible
     ctx.fillStyle='rgba(255,255,255,0.55)';
     ctx.beginPath();ctx.arc(p.x,p.y,sz*0.62,0,6.2832);ctx.fill();
@@ -825,10 +824,13 @@ function loop(ts){
 
 function start(){
   resetWorld();run=true;ov.hidden=true;ov.classList.remove('runstart');
-  if(how)how.hidden=true;
+  if(how)how.hidden=true;if(fine)fine.hidden=true;
+  if(hud)hud.hidden=false;
+  d.body.classList.add('playing');
   last=performance.now();
   cancelAnimationFrame(raf);
   raf=requestAnimationFrame(loop);
+  size();
 }
 
 function end(){
@@ -837,7 +839,9 @@ function end(){
   var nb=score>best;if(nb){best=score;G.setBest(KEY,best);elBest.textContent=best}
   if(dist>bestDist){bestDist=dist;G.setBest(KEYD,Math.floor(bestDist))}
   ov.classList.remove('runstart');
-  if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;
+  if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
+  if(hud)hud.hidden=true;
+  d.body.classList.remove('playing');
   ovT.textContent='撞到了';
   ovS.innerHTML='你跑了 <span class="big">'+Math.floor(dist)+'</span> 公尺<br>分數 <span class="big">'+score+'</span><br>'+(nb?'新的最高分':'最高分 '+best)+G.pickHtml();
   go.textContent='再玩一次';ov.hidden=false;
@@ -847,7 +851,9 @@ go.addEventListener('click',start);
 d.addEventListener('visibilitychange',function(){
   if(d.hidden&&run&&!crashing){
     run=false;cancelAnimationFrame(raf);
-    ov.classList.remove('runstart');if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;
+    ov.classList.remove('runstart');if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
+    if(hud)hud.hidden=true;
+    d.body.classList.remove('playing');
     ovT.textContent='暫停中';ovS.textContent='回到頁面後再開始';
     go.textContent='重新開始';ov.hidden=false;
   }
