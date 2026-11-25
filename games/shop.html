@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant-TW">
+<html lang="zh-Hant-TW" class="shoppage">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -9,54 +9,67 @@
 <meta name="description" content="經營一間 Potato Corner 小店：下鍋、搖粉、做飲料，在客人離開前把餐點送對。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=4">
+<link rel="stylesheet" href="games.css?v=7">
 </head>
 <body class="play shoppage">
-<header class="topbar">
-<a class="back" href="index.html">選單</a>
-<a class="brand" href="../index.html"><img src="../assets/logo.webp" alt="Potato Corner" height="28"></a>
-<a class="home" href="../index.html">菜單</a>
-</header>
-<h1>薯條小店長</h1>
-<p class="hint">點食材下鍋，炸好搖上風味粉，飲料裝杯後點給對的客人。</p>
-<div class="hud hud4"><span>關卡 <b id="lv">1</b>/3</span><span>剩下 <b id="time">90</b> 秒</span><span>營業額 <b id="money">0</b></span><span>目標 <b id="goal">0</b></span></div>
 <div class="stagewrap" id="wrap">
 <div class="shop-stage" id="stage" aria-label="薯條小店長遊戲畫面">
-  <div class="shop-wall"></div>
+  <a class="shopback" href="index.html">選單</a>
+  <div class="shophud" id="hud" hidden>
+    <span class="coin">金幣 <b id="money">0</b></span>
+    <span>關卡 <b id="lv">1</b>/3</span>
+    <span>目標 <b id="goal">0</b></span>
+    <span>剩下 <b id="time">90</b> 秒</span>
+  </div>
+  <div class="shop-sky" aria-hidden="true"></div>
   <div class="custs" id="custs"></div>
-  <div class="counter3d">
-    <div class="counter-top">
-      <div class="clerk"><img src="img/mascot-run.png" alt="" width="54" height="54"></div>
-      <div class="tray-box"><span class="lab">出餐盤</span><div class="tray" id="tray"></div></div>
-      <div class="shake-box"><span class="lab">搖搖杯</span><div class="shaker" id="shaker"></div></div>
+  <div class="counter" id="counter">
+    <div class="counter-deck">
+      <div class="serve-row">
+        <div class="eq tray-eq">
+          <span class="eq-lab">出餐盤</span>
+          <div class="tray" id="tray"></div>
+        </div>
+        <div class="eq shake-eq">
+          <span class="eq-lab">搖搖杯</span>
+          <div class="shaker" id="shaker"></div>
+        </div>
+      </div>
+      <div class="cook-row">
+        <div class="bins" id="raws"></div>
+        <div class="pots" id="fryers"></div>
+      </div>
+      <div class="tool-row">
+        <div class="jars" id="flavs"></div>
+        <button class="eq drink-eq" id="drinkBtn" type="button">
+          <span class="drink-body"><i id="drinkFill"></i></span>
+          <img src="img/drink.png" alt="">
+          <span>飲料機</span>
+        </button>
+        <button class="eq trash-eq" id="trashBtn" type="button">
+          <span class="bin"></span>
+          <span>丟掉</span>
+        </button>
+      </div>
     </div>
     <div class="counter-front">Potato Corner</div>
   </div>
-  <div class="stations">
-    <div class="row raws" id="raws"></div>
-    <div class="row fryers" id="fryers"></div>
-    <div class="row tools">
-      <div class="flavs" id="flavs"></div>
-      <button class="st drink-btn" id="drinkBtn" type="button"><img src="img/drink.png" alt=""><span>飲料機</span><i id="drinkFill"></i></button>
-      <button class="st trash-btn" id="trashBtn" type="button">丟棄</button>
-    </div>
-  </div>
 </div>
-<div class="overlay runstart shopstart" id="ov">
+<div class="overlay shopstart" id="ov">
 <img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
 <p class="ovt" id="ovT">薯條小店長</p>
 <p class="ovs" id="ovS">一局 90 秒，共 3 關，營業額達到目標就過關。客人等太久會走掉，薯條炸太久會焦。</p>
 <div class="how" id="how">
 <div><span>1</span> 點薯條、捲捲薯或雞米花下油鍋</div>
 <div><span>2</span> 炸到金黃就點進搖搖杯，再選風味粉</div>
-<div><span>3</span> 點飲料機裝杯，把完成品點給對的客人</div>
+<div><span>3</span> 點飲料機裝杯，點完成品會自動送給對的客人，也可以拖過去</div>
 <div><span>！</span> 組合餐要全部送對才算完成</div>
 </div>
 <button class="btn" id="go" type="button">開始營業</button>
+<p class="fine" id="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
 </div>
 </div>
-<p class="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
 <script src="games.js?v=2"></script>
-<script src="shop.js?v=2"></script>
+<script src="shop.js?v=3"></script>
 </body>
 </html>

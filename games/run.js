@@ -7,8 +7,10 @@ var elScore=d.getElementById('score'),elDist=d.getElementById('dist'),elBest=d.g
 var KEY='pcGameRunBest',KEYD='pcGameRunBestDist';
 var W=0,H=0,dpr=1,focal=1,horizon=0,camH=1.8;
 var LANE=1.22,NEAR=5.7,FAR=78,ROAD=1.60;
-var CHAR=0.56; // width vs nearest lane
-var FEET=0.78; // feet at 78% of canvas height
+var CHAR=0.50; // width vs nearest lane
+var FEET=0.80; // feet at 80% of canvas height
+var HORIZON=0.20; // vanishing point, 18–22%
+var PERSP=0.50; // <1 keeps the far road wider
 var run=false,frozen=false,crashing=false,crashT=0,last=0,raf=0,camZ=0,speed=0,dist=0,score=0,coins=0,pops=[];
 var best=G.getBest(KEY),bestDist=G.getBest(KEYD);
 elBest.textContent=best;elDist.textContent=0;
@@ -33,16 +35,21 @@ function size(){
   cv.width=W*dpr;cv.height=H*dpr;
   cv.style.width=W+'px';cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  horizon=H*0.28;
-  // near road slightly past the screen edges; character/obstacles scale with it
-  var fill=1.03;
+  horizon=H*HORIZON;
+  // near road slightly past the screen edges
+  var fill=1.04;
   focal=W*fill*NEAR/(2*LANE*ROAD);
   camH=(H*FEET-horizon)*NEAR/focal;
   draw();
 }
 
-function proj(wx,wy,relZ){
+function depthZ(relZ){
   var z=Math.max(relZ,0.55);
+  if(z<=NEAR)return z;
+  return NEAR+(z-NEAR)*PERSP;
+}
+function proj(wx,wy,relZ){
+  var z=depthZ(relZ);
   var s=focal/z;
   return {x:W/2+wx*s,y:horizon+(camH-wy)*s,s:s};
 }
@@ -345,27 +352,39 @@ function drawPrism(cx,yG,w,h,s,front,side,top,opts){
 
 /* -------- world -------- */
 function drawSky(){
-  var g=ctx.createLinearGradient(0,0,0,horizon+8);
-  g.addColorStop(0,'#0e5a2c');
-  g.addColorStop(0.7,'#5eae6e');
-  g.addColorStop(1,'#9ed9b0');
-  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  // sun
-  ctx.fillStyle='#fce404';
-  ctx.beginPath();ctx.arc(W*0.78,horizon*0.42,H*0.055,0,6.2832);ctx.fill();
+  // thin sky strip only above the horizon; no sun
+  var g=ctx.createLinearGradient(0,0,0,horizon);
+  g.addColorStop(0,'#0a3a1a');
+  g.addColorStop(1,'#3d7a48');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,horizon+1);
+  // receding bed, darker toward the horizon
+  var g2=ctx.createLinearGradient(0,horizon,0,H);
+  g2.addColorStop(0,'#3f3410');
+  g2.addColorStop(0.4,'#6b5820');
+  g2.addColorStop(1,'#8a7028');
+  ctx.fillStyle=g2;ctx.fillRect(0,horizon,W,H-horizon+2);
 }
 
 function drawRoad(){
-  var segs=26,rh=roadHalf();
+  var segs=32,rh=roadHalf(),DRAW_FAR=FAR*2.2,bed=rh+6.5;
   function trap(half,zA,zB){
     var a=proj(-half,0,zA),b=proj(half,0,zA),c=proj(half,0,zB),d=proj(-half,0,zB);
     ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();
   }
   for(var i=segs;i>=0;i--){
-    var z0=NEAR+(FAR-NEAR)*(i+1)/segs;
-    var z1=NEAR+(FAR-NEAR)*i/segs;
+    var z0=NEAR+(DRAW_FAR-NEAR)*(i+1)/segs;
+    var z1=NEAR+(DRAW_FAR-NEAR)*i/segs;
+    ctx.fillStyle=(i%2===0)?'#5c4c1c':'#4e4018';
+    trap(bed,z0,z1);ctx.fill();
+    if(z0>FAR+8)continue;
     ctx.fillStyle=(i%2===0)?'#e8c94a':'#d6b536';
     trap(rh,z0,z1);ctx.fill();
+  }
+  // close the bed to the vanishing point so no flat band sits under the sky
+  var farZ=DRAW_FAR, Lp=proj(-bed,0,farZ), Rp=proj(bed,0,farZ);
+  if(Lp.y>horizon+1){
+    ctx.fillStyle='#3f3410';
+    ctx.beginPath();ctx.moveTo(Lp.x,Lp.y);ctx.lineTo(Rp.x,Rp.y);ctx.lineTo(W/2,horizon);ctx.closePath();ctx.fill();
   }
   var yN=proj(0,0,NEAR).y;
   if(yN<H){
@@ -385,6 +404,7 @@ function drawRoad(){
   ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
   ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(e.x,e.y);ctx.stroke();
+  drawRails(rh);
   // lane dividers
   var dash=3.2,gap=2.4,period=dash+gap;
   var start=camZ%period;
@@ -401,11 +421,36 @@ function drawRoad(){
   }
 }
 
+function drawRails(rh){
+  var h=1.25,thick=0.28,segs=22,DRAW_FAR=FAR*1.8;
+  function quad(a,b,c,d,col){
+    ctx.fillStyle=col;
+    ctx.beginPath();
+    ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);
+    ctx.closePath();ctx.fill();
+  }
+  for(var side=-1;side<=1;side+=2){
+    var x0=side*(rh+thick*0.15),x1=side*(rh+thick);
+    for(var i=segs;i>=0;i--){
+      var z0=NEAR+(DRAW_FAR-NEAR)*(i+1)/segs;
+      var z1=NEAR+(DRAW_FAR-NEAR)*i/segs;
+      if(z1<NEAR)z1=NEAR;
+      var i0=proj(x0,0,z0),i1=proj(x0,0,z1);
+      var o0=proj(x1,0,z0),o1=proj(x1,0,z1);
+      var i0t=proj(x0,h,z0),i1t=proj(x0,h,z1);
+      var o0t=proj(x1,h,z0),o1t=proj(x1,h,z1);
+      quad(o0t,o1t,o1,o0,'#0b4e28');
+      quad(i0t,i1t,o1t,o0t,'#fce404');
+      quad(i0t,i1t,i1,i0,i%2?'#148c44':'#0f7a38');
+    }
+  }
+}
+
 /* -------- obstacles -------- */
 function drawObj(o){
   var rel=o.z-camZ;
   if(rel<1||rel>FAR)return;
-  var fade=rel>FAR-12?Math.max(0,(FAR-rel)/12):1;
+  var fade=rel>FAR-8?Math.max(0,(FAR-rel)/8):1;
   ctx.save();ctx.globalAlpha=fade;
   var lx=laneX(o.lane);
   if(o.typ==='coin'){
