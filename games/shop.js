@@ -16,7 +16,13 @@ var FOOD={
   fries:{name:'薯條',price:80,img:IMG+'fries.webp',bin:IMG+'bin-fries.webp'},
   loopy:{name:'捲捲薯',price:90,img:IMG+'loopy.webp',bin:IMG+'bin-loopy.webp'},
   pops:{name:'雞米花',price:100,img:IMG+'pops.webp',bin:IMG+'bin-pops.webp'},
-  drink:{name:'飲料',price:45,img:IMG+'drink.webp'}
+  drink:{name:'飲料',price:45,img:IMG+'cup-green.webp'}
+};
+var DRINK_IDS=['tea','green','lemon'];
+var DRINKS={
+  tea:{id:'tea',name:'紅茶',img:IMG+'cup-tea.webp',machine:IMG+'drink-tea.webp'},
+  green:{id:'green',name:'綠茶',img:IMG+'cup-green.webp',machine:IMG+'drink-green.webp'},
+  lemon:{id:'lemon',name:'檸檬飲',img:IMG+'cup-lemon.webp',machine:IMG+'drink-lemon.webp'}
 };
 var FLAV={
   onion:{name:'酸奶洋蔥',img:IMG+'jar-onion.webp'},
@@ -40,9 +46,11 @@ function preventPage(e){if(ov&&!ov.hidden)return;e.preventDefault()}
 wrap.addEventListener('touchmove',preventPage,{passive:false});
 
 function icon(src,cls){return '<img src="'+src+'" alt="" draggable="false"'+(cls?' class="'+cls+'"':'')+'>'}
+function drinkOf(it){return (it&&DRINKS[it.drink])?DRINKS[it.drink]:DRINKS.green}
+function itemImg(it){return it.type==='drink'?drinkOf(it).img:FOOD[it.type].img}
 function itemHtml(it,cls){
   var flav=it.flavor?icon(FLAV[it.flavor].img,'flav'):'';
-  return '<div class="item '+(cls||'')+(it.burnt?' burnt':'')+'" data-id="'+it.id+'">'+icon(FOOD[it.type].img)+flav+'</div>';
+  return '<div class="item '+(cls||'')+(it.burnt?' burnt':'')+'" data-id="'+it.id+'">'+icon(itemImg(it))+flav+'</div>';
 }
 function skinSrc(skin,mood){return IMG+'cust-'+skin+'-'+mood+'.webp'}
 function moodOf(c){
@@ -53,7 +61,7 @@ function moodOf(c){
 
 function makeOrder(comboChance){
   function oneFood(){return {type:FOODS[Math.random()*FOODS.length|0],flavor:FLAVS[Math.random()*FLAVS.length|0],done:0}}
-  function oneDrink(){return {type:'drink',flavor:null,done:0}}
+  function oneDrink(){return {type:'drink',drink:DRINK_IDS[Math.random()*DRINK_IDS.length|0],flavor:null,done:0}}
   var r=Math.random();
   if(r<comboChance){
     if(Math.random()<.5)return [oneFood(),oneDrink()];
@@ -67,7 +75,7 @@ function resetLevel(keepMoney){
   timeLeft=cfg.time;levelMoney=0;spawnT=0.25;
   fryers=[];for(var i=0;i<3;i++)fryers.push({id:i,food:null,t:0,state:'empty'});
   plates=[null,null,null];serves=[null,null,null];
-  drinks=[{t:-1,cup:null},{t:-1,cup:null},{t:-1,cup:null}];
+  drinks=DRINK_IDS.map(function(k){return {t:-1,cup:null,kind:k}});
   sel=null;custs=[];coins=[];
   if(!keepMoney)money=0;
   elLv.textContent=String(lv+1)+'/3';
@@ -189,7 +197,8 @@ function serveTo(c, it, idx){
     var o=c.order[i];
     if(o.done)continue;
     if(o.type!==it.type)continue;
-    if(o.type!=='drink'&&o.flavor!==it.flavor)continue;
+    if(o.type==='drink'){if((o.drink||'')!==(it.drink||''))continue;}
+    else if(o.flavor!==it.flavor)continue;
     match=i;break;
   }
   if(match<0)return false;
@@ -293,12 +302,12 @@ function update(dt){
       plates[i]=null;mark();
     }
   });
-  drinks.forEach(function(m){
+  drinks.forEach(function(m,i){
     if(m.t<0)return;
     m.t+=dt;
     if(m.t>=cfg.drink){
       if(m.cup){m.t=cfg.drink-0.05;return}
-      m.cup={id:nextId(),type:'drink',flavor:null};m.t=-1;mark();
+      m.cup={id:nextId(),type:'drink',drink:m.kind||DRINK_IDS[i],flavor:null};m.t=-1;mark();
     }
   });
   custs.forEach(function(c){
@@ -330,7 +339,12 @@ function render(){
     if(c.arrive<=0 && !c.fromDoor){
       html+='<div class="bubble">';
       c.order.forEach(function(o){
-        html+='<span class="need'+(o.done?' done':'')+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'</span>';
+        if(o.type==='drink'){
+          var dk=drinkOf(o);
+          html+='<span class="need drink-need'+(o.done?' done':'')+'">'+icon(dk.img)+'<em class="dlab">'+dk.name+'</em></span>';
+        }else{
+          html+='<span class="need'+(o.done?' done':'')+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'</span>';
+        }
       });
       html+='</div>';
       var pct=Math.max(0,c.patience/c.maxP);
@@ -390,10 +404,12 @@ function render(){
   });
 
   elDrinks.innerHTML=drinks.map(function(m,i){
+    var kind=m.kind||DRINK_IDS[i];
+    var dk=DRINKS[kind];
     var fillPct=m.t<0?0:Math.min(1,m.t/cfg.drink);
-    var lab=m.cup?'點杯':(m.t>=0?'裝杯中':'');
-    var cup=m.cup?'<img class="cup-out item'+(m.cup.id===sel?' picked':'')+'" data-id="'+m.cup.id+'" src="'+FOOD.drink.img+'" alt="" draggable="false">':'';
-    return '<button class="cell drink-eq'+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button"><img class="art" src="'+IMG+'drink-wide.webp" alt="" draggable="false"><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'<span class="plab">'+lab+'</span></button>';
+    var lab=m.cup?'點杯':(m.t>=0?'裝杯中':dk.name);
+    var cup=m.cup?'<img class="cup-out item'+(m.cup.id===sel?' picked':'')+'" data-id="'+m.cup.id+'" src="'+drinkOf(m.cup).img+'" alt="" draggable="false">':'';
+    return '<button class="cell drink-eq kind-'+kind+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button"><img class="art" src="'+dk.machine+'" alt="" draggable="false"><b class="mlab">'+dk.name+'</b><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'<span class="plab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elDrinks.querySelectorAll('.drink-eq'),function(btn){
     btn.addEventListener('click',function(){takeDrink(+btn.getAttribute('data-i'))});
@@ -599,8 +615,13 @@ window.PCShop={
     plates[0]={id:nextId(),type:'fries',flavor:null,shaking:0};
     serves[0]={id:nextId(),type:'loopy',flavor:'cheese'};
     drinks[0].t=0.6;
-    drinks[1].cup={id:nextId(),type:'drink',flavor:null};
+    drinks[1].cup={id:nextId(),type:'drink',drink:'green',flavor:null};
+    drinks[2].cup={id:nextId(),type:'drink',drink:'lemon',flavor:null};
     while(custs.length<4)spawnCust(true);
+    if(custs[0])custs[0].order=[{type:'fries',flavor:'onion',done:0},{type:'drink',drink:'green',flavor:null,done:0}];
+    if(custs[1])custs[1].order=[{type:'drink',drink:'tea',flavor:null,done:0}];
+    if(custs[2])custs[2].order=[{type:'loopy',flavor:'cheese',done:0},{type:'drink',drink:'lemon',flavor:null,done:0}];
+    if(custs[3])custs[3].order=[{type:'pops',flavor:'bbq',done:0}];
     custs.forEach(function(c){c.enter=0;c.fromDoor=false;c.arrive=0});
     mark();render();paint();
   },
@@ -611,7 +632,7 @@ window.PCShop={
     var slot=-1;for(var i=0;i<serves.length;i++)if(!serves[i]){slot=i;break}
     if(slot<0)slot=0;
     if(o.type==='drink'){
-      serves[slot]={id:nextId(),type:'drink',flavor:null};
+      serves[slot]={id:nextId(),type:'drink',drink:o.drink,flavor:null};
     }else{
       serves[slot]={id:nextId(),type:o.type,flavor:o.flavor};
     }
