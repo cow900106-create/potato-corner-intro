@@ -1,31 +1,38 @@
 <!DOCTYPE html>
-<html lang="zh-Hant-TW">
+<html lang="zh-Hant-TW" class="catchpage">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#148c44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>接薯條｜薯條小遊戲（非官方）</title>
-<meta name="description" content="左右滑動薯條桶，接掉下來的薯條和風味粉，避開焦掉的。非官方小遊戲。">
+<meta name="description" content="左右滑動接住掉下來的薯條、捲捲薯、雞米花、飲料和風味粉。不限時間，接到燒焦的就結束。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=1">
+<link rel="stylesheet" href="games.css?v=11">
 </head>
-<body class="play">
-<header class="topbar">
-<a class="back" href="index.html">選單</a>
-<a class="brand" href="../index.html"><img src="../assets/logo.webp" alt="Potato Corner" height="28"></a>
-<a class="home" href="../index.html">菜單</a>
-</header>
-<h1>接薯條</h1>
-<p class="hint">左右滑動薯條桶，接薯條和風味粉，避開焦掉的。</p>
-<div class="hud"><span>分數 <b id="score">0</b></span><span>剩下 <b id="time">0</b> 秒</span><span>最高 <b id="best">0</b></span></div>
-<div class="stagewrap">
+<body class="play catchpage">
+<div class="stagewrap" id="wrap">
 <canvas id="stage" aria-label="接薯條遊戲畫面"></canvas>
-<div class="overlay" id="ov"><p class="ovt" id="ovT">準備好了嗎</p><p class="ovs" id="ovS">接薯條 +1，接風味粉 +3，接微笑薯餅 +5，焦掉的 −3。一局 45 秒。</p><button class="btn" id="go" type="button">開始</button></div>
+<a class="runback" href="index.html">選單</a>
+<div class="runhud" id="hud" hidden>
+<span>分數 <b id="score">0</b></span>
+<span>最高 <b id="best">0</b></span>
 </div>
-<p class="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
-<script src="games.js?v=1"></script>
-<script src="catch.js?v=1"></script>
+<div class="overlay runstart" id="ov">
+<img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
+<p class="ovt" id="ovT">接薯條</p>
+<p class="ovs" id="ovS">左右滑動薯條桶，接住掉下來的美食。不限時間，越接越快。</p>
+<div class="how" id="how">
+<div><span>← →</span> 左右滑動或拖曳，移動土豆和薯條桶</div>
+<div><span>+</span> 接薯條、捲捲薯、雞米花、飲料和風味粉得分</div>
+<div><span>！</span> 燒焦冒煙的食材千萬別接，接到就結束</div>
+</div>
+<button class="btn" id="go" type="button">開始</button>
+<p class="fine" id="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
+</div>
+</div>
+<script src="games.js?v=2"></script>
+<script src="catch.js?v=2"></script>
 </body>
 </html>
