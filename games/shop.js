@@ -3,7 +3,7 @@ var d=document,G=window.PCGames;
 var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('ovS'),go=d.getElementById('go');
 var how=d.getElementById('how'),ovlogo=d.getElementById('ovlogo'),wrap=d.getElementById('wrap');
 var hud=d.getElementById('hud'),fine=d.getElementById('fine');
-var elLv=d.getElementById('lv'),elTime=d.getElementById('time'),elMoney=d.getElementById('money'),elGoal=d.getElementById('goal');
+var elMoney=d.getElementById('money'),elLost=d.getElementById('lost'),elHearts=d.getElementById('hearts');
 var elCusts=d.getElementById('custs');
 var elRaws=d.getElementById('raws'),elFryers=d.getElementById('fryers'),elFlavs=d.getElementById('flavs');
 var elPlates=d.getElementById('plates'),elServes=d.getElementById('serves'),elDrinks=d.getElementById('drinks');
@@ -16,37 +16,43 @@ var FOOD={
   fries:{name:'薯條',price:80,img:IMG+'fries.webp',bin:IMG+'bin-fries.webp'},
   loopy:{name:'捲捲薯',price:90,img:IMG+'loopy.webp',bin:IMG+'bin-loopy.webp'},
   pops:{name:'雞米花',price:100,img:IMG+'pops.webp',bin:IMG+'bin-pops.webp'},
-  drink:{name:'飲料',price:45,img:IMG+'cup-green.webp'}
+  drink:{name:'飲料',price:45,img:IMG+'cup-cola.webp'}
 };
-var DRINK_IDS=['tea','green','lemon'];
+var DRINK_IDS=['cola','sprite','tea'];
 var DRINKS={
-  tea:{id:'tea',name:'紅茶',img:IMG+'cup-tea.webp',machine:IMG+'drink-tea.webp'},
-  green:{id:'green',name:'綠茶',img:IMG+'cup-green.webp',machine:IMG+'drink-green.webp'},
-  lemon:{id:'lemon',name:'檸檬飲',img:IMG+'cup-lemon.webp',machine:IMG+'drink-lemon.webp'}
+  cola:{id:'cola',name:'可樂',img:IMG+'cup-cola.webp',machine:IMG+'drink-cola.webp'},
+  sprite:{id:'sprite',name:'雪碧',img:IMG+'cup-sprite.webp',machine:IMG+'drink-sprite.webp'},
+  tea:{id:'tea',name:'紅茶',img:IMG+'cup-tea.webp',machine:IMG+'drink-tea.webp'}
 };
 var FLAV={
-  onion:{name:'酸奶洋蔥',img:IMG+'jar-onion.webp'},
-  bbq:{name:'碳烤BBQ',img:IMG+'jar-bbq.webp'},
-  cheese:{name:'香濃起司',img:IMG+'jar-cheese.webp'},
-  chili:{name:'香辣BBQ',img:IMG+'jar-chili.webp'}
+  onion:{name:'酸奶洋蔥',short:'洋蔥',img:IMG+'jar-onion.webp'},
+  bbq:{name:'碳烤BBQ',short:'BBQ',img:IMG+'jar-bbq.webp'},
+  cheese:{name:'香濃起司',short:'起司',img:IMG+'jar-cheese.webp'},
+  chili:{name:'香辣BBQ',short:'香辣',img:IMG+'jar-chili.webp'}
 };
 var FOODS=['fries','loopy','pops'],FLAVS=['onion','bbq','cheese','chili'];
 var SKINS=['a','b','c','d'];
-var LEVELS=[
-  {goal:360,time:90,fryers:3,spawn:4.5,patience:20,cook:3.2,burn:6.2,combo:0.18,drink:1.6},
-  {goal:640,time:90,fryers:3,spawn:3.3,patience:15,cook:2.7,burn:5.3,combo:0.4,drink:1.4},
-  {goal:900,time:90,fryers:3,spawn:2.6,patience:12,cook:2.3,burn:4.6,combo:0.55,drink:1.2}
-];
-var run=false,lv=0,timeLeft=90,money=0,levelMoney=0,fryers=[],plates=[],serves=[],drinks=[],sel=null;
+var run=false,money=0,lost=0,pendingOver=0,fryers=[],plates=[],serves=[],drinks=[],sel=null;
 var custs=[],spawnT=0,uid=1,last=0,raf=0,toastT=0,toastMsg='',dirty=true,coins=[];
 function mark(){dirty=true}
-function L(){return LEVELS[lv]}
+function L(){
+  var t=1-Math.exp(-Math.max(0,money)/700);
+  return {
+    fryers:3,
+    spawn:4.5-t*2.2,
+    patience:25-t*6,
+    cook:4.0,
+    burn:7.75,
+    combo:0.18+t*0.5,
+    drink:1.6
+  };
+}
 function nextId(){return uid++}
 function preventPage(e){if(ov&&!ov.hidden)return;e.preventDefault()}
 wrap.addEventListener('touchmove',preventPage,{passive:false});
 
 function icon(src,cls){return '<img src="'+src+'" alt="" draggable="false"'+(cls?' class="'+cls+'"':'')+'>'}
-function drinkOf(it){return (it&&DRINKS[it.drink])?DRINKS[it.drink]:DRINKS.green}
+function drinkOf(it){return (it&&DRINKS[it.drink])?DRINKS[it.drink]:DRINKS.cola}
 function itemImg(it){return it.type==='drink'?drinkOf(it).img:FOOD[it.type].img}
 function itemHtml(it,cls){
   var flav=it.flavor?icon(FLAV[it.flavor].img,'flav'):'';
@@ -70,19 +76,14 @@ function makeOrder(comboChance){
   return Math.random()<.22?[oneDrink()]:[oneFood()];
 }
 
-function resetLevel(keepMoney){
-  var cfg=L();
-  timeLeft=cfg.time;levelMoney=0;spawnT=0.25;
+function resetRound(){
+  spawnT=0.25;pendingOver=0;
   fryers=[];for(var i=0;i<3;i++)fryers.push({id:i,food:null,t:0,state:'empty'});
   plates=[null,null,null];serves=[null,null,null];
   drinks=DRINK_IDS.map(function(k){return {t:-1,cup:null,kind:k}});
   sel=null;custs=[];coins=[];
-  if(!keepMoney)money=0;
-  elLv.textContent=String(lv+1)+'/3';
-  elGoal.textContent='$'+cfg.goal;
   elMoney.textContent='$'+money;
-  elTime.textContent=String(Math.ceil(timeLeft));
-  syncGoal();
+  syncLives();
   buildStations();
   render();
 }
@@ -249,14 +250,18 @@ function tapCust(slot){
   if(!serveTo(c,found.it,found.idx))toast('不是這份');
 }
 
-function syncGoal(){
-  var el=d.getElementById('goalFill'),g=L().goal;
-  if(el)el.style.width=Math.min(100,(levelMoney/g)*100)+'%';
+function syncLives(){
+  if(elLost)elLost.textContent=String(lost);
+  if(elHearts){
+    var html='';
+    for(var i=0;i<3;i++)html+='<i class="heart'+(i<lost?' off':'')+'" aria-hidden="true"></i>';
+    elHearts.innerHTML=html;
+  }
+  if(elHearts&&elHearts.parentNode)elHearts.parentNode.setAttribute('aria-label','走掉 '+lost+'/3');
 }
 function addMoney(n){
-  money+=n;levelMoney+=n;
+  money+=n;
   elMoney.textContent='$'+money;
-  syncGoal();
 }
 
 function toast(m){toastMsg=m;toastT=1.15}
@@ -279,9 +284,6 @@ function seatLeft(slot){return 14+(slot+0.5)*(72/SEATS)}
 
 function update(dt){
   var cfg=L();
-  timeLeft-=dt;
-  if(timeLeft<0)timeLeft=0;
-  elTime.textContent=String(Math.ceil(timeLeft));
 
   fryers.forEach(function(f){
     if(f.state==='cook'||f.state==='ready'){
@@ -314,7 +316,11 @@ function update(dt){
     if(c.arrive>0){c.arrive-=dt;if(c.arrive<0)c.arrive=0;return}
     if(c.leave){c.leaveT-=dt;return}
     c.patience-=dt;
-    if(c.patience<=0){c.leave='gone';c.leaveT=0.55;toast('客人走了');mark()}
+    if(c.patience<=0){
+      c.leave='gone';c.leaveT=0.55;lost+=1;syncLives();
+      toast('客人走了');mark();
+      if(lost>=3)pendingOver=0.45;
+    }
   });
   var n=custs.length;custs=custs.filter(function(c){return !(c.leave&&c.leaveT<=0)});if(custs.length!==n)mark();
 
@@ -323,8 +329,10 @@ function update(dt){
 
   if(toastT>0)toastT-=dt;
   coins=coins.filter(function(x){x.t-=dt;return x.t>0});
-  if(levelMoney>=cfg.goal){levelClear();return}
-  if(timeLeft<=0){fail();return}
+  if(pendingOver>0){
+    pendingOver-=dt;
+    if(pendingOver<=0){gameOver();return}
+  }
 }
 
 function render(){
@@ -343,7 +351,8 @@ function render(){
           var dk=drinkOf(o);
           html+='<span class="need drink-need'+(o.done?' done':'')+'">'+icon(dk.img)+'<em class="dlab">'+dk.name+'</em></span>';
         }else{
-          html+='<span class="need'+(o.done?' done':'')+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'</span>';
+          var lab=o.flavor&&FLAV[o.flavor]?FLAV[o.flavor].short:FOOD[o.type].name;
+          html+='<span class="need food-need'+(o.done?' done':'')+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'<em class="dlab">'+lab+'</em></span>';
         }
       });
       html+='</div>';
@@ -499,7 +508,6 @@ function paint(){
     var fill=d.querySelector('.drink-eq[data-i="'+i+'"] .drink-fill');
     if(fill)fill.style.height=((m.t<0?0:Math.min(1,m.t/cfgP.drink))*22)+'px';
   });
-  syncGoal();
   var tip=d.getElementById('toast');
   if(tip){tip.textContent=toastMsg;tip.className='toast'+(toastT>0?' on':'')}
 }
@@ -515,6 +523,7 @@ function loop(ts){
 
 function showHud(on){
   if(pauseBtn)pauseBtn.hidden=!on;
+  if(hud)hud.hidden=!on;
   if(on)d.body.classList.add('playing');
   else d.body.classList.remove('playing');
 }
@@ -528,10 +537,10 @@ function pauseGame(){
 }
 
 function start(){
-  lv=0;money=0;run=true;ov.hidden=true;ov.classList.remove('runstart','shopstart');
+  money=0;lost=0;pendingOver=0;run=true;ov.hidden=true;ov.classList.remove('runstart','shopstart');
   if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
   showHud(true);
-  resetLevel(false);
+  resetRound();
   last=performance.now();
   cancelAnimationFrame(raf);
   raf=requestAnimationFrame(loop);
@@ -539,6 +548,9 @@ function start(){
 
 function pauseEnd(title,msg,again){
   run=false;cancelAnimationFrame(raf);
+  toastT=0;toastMsg='';
+  var tip=d.getElementById('toast');
+  if(tip){tip.textContent='';tip.className='toast'}
   ov.classList.remove('runstart','shopstart');
   if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
   showHud(false);
@@ -546,38 +558,12 @@ function pauseEnd(title,msg,again){
   ovS.innerHTML=msg;go.textContent=again;ov.hidden=false;
 }
 
-function levelClear(){
-  if(lv>=LEVELS.length-1){
-    var nb=money>best;if(nb){best=money;G.setBest(KEY,best)}
-    pauseEnd('全部過關','3 關總營業額 <span class="big">$'+money+'</span><br>'+(nb?'新的最高分':'最高分 $'+best)+G.pickHtml(),'再玩一次');
-    return;
-  }
-  run=false;cancelAnimationFrame(raf);
-  ov.classList.remove('runstart','shopstart');
-  if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
-  showHud(false);
-  ovT.textContent='第 '+(lv+1)+' 關過關';
-  ovS.innerHTML='目前營業額 <span class="big">$'+money+'</span><br>下一關客人會更快。';
-  go.textContent='下一關';
-  go.dataset.next='1';
-  ov.hidden=false;
-}
-
-function fail(){
+function gameOver(){
   var nb=money>best;if(nb){best=money;G.setBest(KEY,best)}
-  pauseEnd('時間到','第 '+(lv+1)+' 關沒達到 $'+L().goal+'<br>總營業額 <span class="big">$'+money+'</span><br>'+(nb?'新的最高分':'最高分 $'+best)+G.pickHtml(),'再玩一次');
+  pauseEnd('客人走光了','營業額 <span class="big">$'+money+'</span><br>'+(nb?'新的最高分！':'最高分 $'+best)+G.pickHtml(),'再玩一次');
 }
 
 go.addEventListener('click',function(){
-  if(go.dataset.next==='1'){
-    go.dataset.next='';
-    lv+=1;run=true;ov.hidden=true;
-    showHud(true);
-    resetLevel(true);
-    last=performance.now();
-    raf=requestAnimationFrame(loop);
-    return;
-  }
   start();
 });
 if(trashBtn)trashBtn.addEventListener('click',trash);
@@ -614,14 +600,15 @@ window.PCShop={
     if(fryers[2])fryers[2].t=0.8;
     plates[0]={id:nextId(),type:'fries',flavor:null,shaking:0};
     serves[0]={id:nextId(),type:'loopy',flavor:'cheese'};
-    drinks[0].t=0.6;
-    drinks[1].cup={id:nextId(),type:'drink',drink:'green',flavor:null};
-    drinks[2].cup={id:nextId(),type:'drink',drink:'lemon',flavor:null};
+    drinks[0].cup={id:nextId(),type:'drink',drink:'cola',flavor:null};
+    drinks[1].cup={id:nextId(),type:'drink',drink:'sprite',flavor:null};
+    drinks[2].t=0.7;
     while(custs.length<4)spawnCust(true);
-    if(custs[0])custs[0].order=[{type:'fries',flavor:'onion',done:0},{type:'drink',drink:'green',flavor:null,done:0}];
+    if(custs[0])custs[0].order=[{type:'fries',flavor:'onion',done:0},{type:'drink',drink:'cola',flavor:null,done:0}];
     if(custs[1])custs[1].order=[{type:'drink',drink:'tea',flavor:null,done:0}];
-    if(custs[2])custs[2].order=[{type:'loopy',flavor:'cheese',done:0},{type:'drink',drink:'lemon',flavor:null,done:0}];
+    if(custs[2])custs[2].order=[{type:'loopy',flavor:'cheese',done:0},{type:'drink',drink:'sprite',flavor:null,done:0}];
     if(custs[3])custs[3].order=[{type:'pops',flavor:'bbq',done:0}];
+    lost=0;syncLives();
     custs.forEach(function(c){c.enter=0;c.fromDoor=false;c.arrive=0});
     mark();render();paint();
   },
@@ -642,8 +629,9 @@ window.PCShop={
     for(var i=0;i<serves.length;i++)if(serves[i]&&autoServeItem(serves[i]))return;
     for(var i=0;i<drinks.length;i++)if(drinks[i].cup&&autoServeItem(drinks[i].cup))return;
   },
-  info:function(){return {run:run,lv:lv,money:money,timeLeft:timeLeft,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}}
+  end:function(){lost=3;syncLives();gameOver();},
+  info:function(){return {run:run,money:money,lost:lost,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}}
 };
 
-lv=0;resetLevel(false);
+lost=0;money=0;resetRound();
 })();

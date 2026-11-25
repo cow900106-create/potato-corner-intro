@@ -101,7 +101,7 @@ body.play.runpage .overlay{padding:18px 16px;padding-top:calc(52px + env(safe-ar
 .how span{flex:none;min-width:28px;color:var(--y)}
 body.play.runpage .overlay .fine{flex:none;margin:10px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 
-/* shop manager v8 — landscape counter, uniform object size, 3 drink kinds */
+/* shop manager v9 — endless, cola/sprite/tea, larger order bubbles */
 html.shoppage{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
 body.play.shoppage{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;background:#14633a;-webkit-user-select:none;user-select:none}
 body.play.shoppage .stagewrap{position:absolute;inset:0;width:100%;height:100%;max-width:none;margin:0;border-radius:0;box-shadow:none;align-self:auto;background:#14633a;overflow:hidden}
@@ -119,34 +119,43 @@ body.play.shoppage.playing .shop-tophud[hidden] > *{pointer-events:auto}
 body.play.shoppage.playing .hud-pause{display:block}
 .hud-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;background:rgba(8,50,22,.72);border-radius:99px;padding:4px 14px 4px 12px;box-shadow:0 2px 0 rgba(0,0,0,.25);color:#fff;font-size:11px;font-weight:800;white-space:nowrap;pointer-events:none}
 .hud-center b{color:#fce404;font-weight:900}
+
+.hud-lives{display:flex;align-items:center;gap:8px}
+.lives-lab{font-size:11px}
+.hearts{display:inline-flex;align-items:center;gap:3px}
+.heart{position:relative;width:14px;height:14px;display:inline-block;flex:none}
+.heart:before,.heart:after{content:"";position:absolute;top:1px;width:8px;height:12px;background:#ff4d62;border-radius:8px 8px 0 0}
+.heart:before{left:7px;transform:rotate(-45deg);transform-origin:0 100%}
+.heart:after{left:7px;transform:rotate(45deg);transform-origin:100% 100%}
+.heart.off:before,.heart.off:after{background:rgba(255,255,255,.32)}
 .hud-coin{display:flex;align-items:center;gap:6px}
 .goalbar{display:inline-block;width:72px;height:8px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden;vertical-align:middle}
 .goalbar i,.goalbar #goalFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#fce404,#fff6bf);border-radius:99px;transition:width .2s}
 .goallab{font-size:10px;opacity:.95}
 
 /* upper ~40%: street / mall, customers in a row behind the counter */
-.shop-stage .plaza{position:absolute;left:0;right:0;top:0;height:42%;background:url("img/shop/plaza-wide.webp") center 30%/cover no-repeat;pointer-events:none;z-index:0}
-.shop-stage .custs{position:absolute;left:0;right:0;top:2%;height:40%;z-index:4;padding:0 8px;box-sizing:border-box;pointer-events:none}
-.shop-stage .cust{position:absolute;left:50%;bottom:4%;width:14%;max-width:92px;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent}
+.shop-stage .plaza{position:absolute;left:0;right:0;top:0;height:56%;background:url("img/shop/plaza-wide.webp") center 30%/cover no-repeat;pointer-events:none;z-index:0}
+.shop-stage .custs{position:absolute;left:0;right:0;top:calc(40px + env(safe-area-inset-top,0px));bottom:46%;height:auto;z-index:4;padding:0 6px;box-sizing:border-box;pointer-events:none}
+.shop-stage .cust{position:absolute;left:50%;bottom:2%;width:20%;max-width:160px;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent}
 .shop-stage .cust.entering{left:94%!important;transform:translateX(-50%) scale(.7);opacity:.8;z-index:1}
 .shop-stage .cust.leaving{opacity:0;transform:translateX(-50%) translateY(10px) scale(.9)}
 .shop-stage .cust.happy-leave{opacity:0;transform:translateX(-50%) translateY(-16px) scale(.9)}
-.shop-stage .cust .bubble{background:#fff;border-radius:8px;padding:2px 3px;width:100%;max-width:86px;max-height:48px;overflow:visible;box-shadow:0 2px 0 rgba(0,0,0,.16),0 3px 6px rgba(0,0,0,.12);display:flex;flex-wrap:wrap;gap:1px;justify-content:center;align-items:center;position:relative;box-sizing:border-box}
-.shop-stage .cust .bubble:after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-4px;border:5px solid transparent;border-top-color:#fff;border-bottom-width:0}
-.shop-stage .cust .need{display:inline-flex;align-items:center;background:#fbf4e4;border-radius:5px;padding:1px}
-.shop-stage .cust .need img{width:16px;height:16px;object-fit:contain;display:block;max-width:none}
-.shop-stage .cust .need img.flav{width:11px;height:11px;margin-left:-4px}
+.shop-stage .cust .bubble{background:#fff;border-radius:14px;padding:7px 8px 8px;width:auto;min-width:96px;max-width:168px;max-height:none;overflow:visible;box-shadow:0 3px 0 rgba(0,0,0,.16),0 5px 10px rgba(0,0,0,.14);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;position:relative;box-sizing:border-box}
+.shop-stage .cust .bubble:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:7px solid transparent;border-top-color:#fff;border-bottom-width:0}
+.shop-stage .cust .need{position:relative;display:inline-flex;flex-direction:column;align-items:center;background:#fbf4e4;border-radius:9px;padding:4px 10px 5px 4px;gap:2px}
+.shop-stage .cust .need img{width:32px;height:32px;object-fit:contain;display:block;max-width:none}
+.shop-stage .cust .need img.flav{position:absolute;right:1px;top:18px;width:22px;height:22px;margin:0;background:#fff;border-radius:50%;padding:1px;box-shadow:0 1px 0 rgba(0,0,0,.2)}
 .shop-stage .cust .need.done{opacity:.32;filter:grayscale(.7)}
-.shop-stage .cust .need.drink-need{flex-direction:column;gap:0;padding:1px 3px 2px}
-.shop-stage .cust .need .dlab{display:block;font-size:8px;font-weight:900;line-height:1.05;color:#1a1a1a;font-style:normal;letter-spacing:0;white-space:nowrap}
-.shop-stage .cust .pbar{width:70%;height:4px;background:rgba(255,255,255,.55);border-radius:99px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.2);flex:none}
+.shop-stage .cust .need.drink-need,.shop-stage .cust .need.food-need{flex-direction:column;gap:1px}
+.shop-stage .cust .need .dlab{display:block;font-size:14px;font-weight:900;line-height:1.1;color:#1a1a1a;font-style:normal;letter-spacing:0;white-space:nowrap}
+.shop-stage .cust .pbar{width:76%;height:8px;background:rgba(255,255,255,.55);border-radius:99px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.2);flex:none}
 .shop-stage .cust .pbar i{display:block;height:100%;border-radius:99px}
-.shop-stage .cust .body{width:56px;height:78px;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;display:block;max-width:none}
+.shop-stage .cust .body{width:50px;height:64px;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;display:block;max-width:none}
 .shop-stage .cust .fly-coin{position:absolute;width:22px;height:22px;left:50%;margin-left:-11px;top:20%;pointer-events:none;animation:coinfly .8s ease-out forwards;z-index:5;max-width:none}
 @keyframes coinfly{0%{opacity:1;transform:translateY(0) scale(.8)}100%{opacity:0;transform:translateY(-48px) scale(1.15)}}
 
 /* lower ~60%: wood body + stainless worktop, 6 perspective columns */
-.shop-stage .counter{position:absolute;left:0;right:0;bottom:0;height:60%;z-index:5;background:url("img/shop/wood.webp") center/cover no-repeat,#8b5a2b;box-shadow:0 -8px 16px rgba(0,0,0,.28);padding:0;display:flex;flex-direction:column;overflow:visible}
+.shop-stage .counter{position:absolute;left:0;right:0;bottom:0;height:48%;z-index:5;background:url("img/shop/wood.webp") center/cover no-repeat,#8b5a2b;box-shadow:0 -8px 16px rgba(0,0,0,.28);padding:0;display:flex;flex-direction:column;overflow:visible}
 .shop-stage .counter:after{content:"";flex:none;height:14px;background:linear-gradient(#6a3e1c,#4a2a12);box-shadow:0 -2px 0 rgba(255,255,255,.12),0 3px 6px rgba(0,0,0,.35)}
 .shop-stage .counter-deck{flex:1;min-height:0;min-width:0;position:relative;display:grid;grid-template-columns:1fr 1fr 1.05fr 1.15fr 1.15fr 1.2fr;gap:6px;padding:8px 12px 6px;margin:8px 16px 0;background:url("img/shop/steel-counter.webp") center/cover no-repeat,#8a939a;box-shadow:inset 0 0 0 3px #b7c0c6,inset 0 0 0 7px #6e777e,0 8px 14px rgba(0,0,0,.28);border-radius:8px 8px 0 0;overflow:visible}
 
@@ -226,13 +235,13 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .item.ghost{position:fixed;z-index:60;pointer-events:none;opacity:.95;margin:0;width:56px;height:56px;overflow:visible}
 
 .shop-stage .drink-eq .drink-fill{position:absolute;left:22%;width:16%;bottom:22%;height:0;border-radius:2px;background:linear-gradient(#fff6bf,#fce404);pointer-events:none;z-index:2;opacity:.85}
-.shop-stage .drink-eq.kind-tea .drink-fill{background:linear-gradient(#e0a56a,#6b2c0f)}
-.shop-stage .drink-eq.kind-green .drink-fill{background:linear-gradient(#c6ef7a,#157a32)}
-.shop-stage .drink-eq.kind-lemon .drink-fill{background:linear-gradient(#fff38a,#e0b400)}
+.shop-stage .drink-eq.kind-cola .drink-fill{background:linear-gradient(#6a3a22,#2a1208)}
+.shop-stage .drink-eq.kind-sprite .drink-fill{background:linear-gradient(#c8f59a,#2ea84a)}
+.shop-stage .drink-eq.kind-tea .drink-fill{background:linear-gradient(#f0c56a,#c47a18)}
 .shop-stage .drink-eq .mlab{position:absolute;top:5%;left:50%;transform:translateX(-50%);z-index:4;font-size:10px;font-weight:900;letter-spacing:.04em;line-height:1.2;padding:1px 6px;border-radius:4px;color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.55);background:#157a32;box-shadow:0 1px 2px rgba(0,0,0,.4);pointer-events:none;white-space:nowrap}
-.shop-stage .drink-eq.kind-tea .mlab{background:#7a2e10}
-.shop-stage .drink-eq.kind-green .mlab{background:#157a32}
-.shop-stage .drink-eq.kind-lemon .mlab{background:#e0b400;color:#1a1400;text-shadow:0 1px 0 rgba(255,255,255,.35)}
+.shop-stage .drink-eq.kind-cola .mlab{background:#3a160c}
+.shop-stage .drink-eq.kind-sprite .mlab{background:#1a8a38}
+.shop-stage .drink-eq.kind-tea .mlab{background:#c47a18;color:#1a1400;text-shadow:0 1px 0 rgba(255,255,255,.35)}
 .shop-stage .drink-eq .cup-out{position:absolute;left:16%;bottom:3%;width:34%;height:52%;margin:0;object-fit:contain;z-index:3;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));pointer-events:auto;max-width:none}
 .shop-stage .drink-eq.busy{filter:brightness(1.08)}
 
@@ -252,9 +261,16 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .toast{position:absolute;left:50%;top:18%;transform:translate(-50%,-16px);background:rgba(6,50,20,.92);color:var(--y);font-weight:800;padding:6px 14px;border-radius:99px;opacity:0;pointer-events:none;z-index:8;white-space:nowrap;font-size:13px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
 .shop-stage .toast.on{opacity:1;transform:translate(-50%,0);transition:opacity .15s,transform .15s}
 .overlay.shopstart{background:linear-gradient(180deg,rgba(6,70,28,.5),rgba(6,50,22,.78)),url("img/start-bg.jpg") center/cover no-repeat;justify-content:flex-end}
-body.play.shoppage .overlay{padding:14px 16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
-body.play.shoppage .overlay .fine{flex:none;margin:8px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
+body.play.shoppage .overlay{z-index:40;gap:6px;padding:8px 16px;padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));overflow:hidden;justify-content:center}
+body.play.shoppage .overlay .ovt{font-size:22px}
+body.play.shoppage .overlay .ovs{font-size:15px}
+body.play.shoppage .overlay .big{font-size:32px}
+body.play.shoppage .overlay .rec{max-width:min(380px,68vw);padding:8px 10px}
+body.play.shoppage .overlay .rec img{width:52px;height:52px}
+body.play.shoppage .overlay .btn{padding:8px 22px;font-size:16px;box-shadow:0 3px 0 #c9a600}
+body.play.shoppage .overlay .fine{flex:none;margin:4px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 body.play.shoppage .how{max-width:min(520px,92%)}
+body.play.shoppage .overlay .ovlogo[hidden]{display:none!important}
 
 /* portrait: rotate the WHOLE landscape stage as one block — columns stay columns */
 @media (orientation: portrait){
