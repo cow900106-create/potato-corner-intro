@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#148c44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>搖搖粉｜薯條小遊戲（非官方）</title>
+<meta name="description" content="限時把風味粉搖均勻。可搖手機，或連續點擊杯子。非官方小遊戲。">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="games.css?v=1">
+</head>
+<body class="play">
+<header class="topbar">
+<a class="back" href="index.html">選單</a>
+<a class="brand" href="../index.html"><img src="../assets/logo.webp" alt="Potato Corner" height="28"></a>
+<a class="home" href="../index.html">菜單</a>
+</header>
+<h1>搖搖粉</h1>
+<p class="hint">搖手機或連續點擊杯子，把風味粉搖均勻。</p>
+<div class="hud"><span>分數 <b id="score">0</b></span><span>剩下 <b id="time">0</b> 秒</span><span>最高 <b id="best">0</b></span></div>
+<div class="stagewrap">
+<div class="shake-stage" id="stage">
+<div class="flavor-now"><img id="flavIcon" src="../assets/icons/cheese.webp?v=11" alt="" width="44" height="44"><span id="flavName">香濃起司</span></div>
+<div class="mixbar" aria-hidden="true"><i id="mixFill"></i></div>
+<div class="mixlab">均勻度 <span id="mixPct">0</span>%</div>
+<div class="cupwrap" id="cupHit">
+  <div class="bits" id="bits"></div>
+  <div class="cup" id="cup">
+    <div class="sticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="bowl"></div>
+    <div class="band"></div>
+    <div class="dust" id="dust"></div>
+    <div class="word">Potato<br>Corner</div>
+  </div>
+</div>
+<div class="doneflash" id="flash">搖勻了</div>
+<p class="shake-tip" id="tip">點杯子或搖一搖</p>
+<p class="perm" id="permWrap" hidden><button class="btn quiet" id="perm" type="button">開啟搖動感應</button></p>
+</div>
+<div class="overlay" id="ov"><p class="ovt" id="ovT">準備好了嗎</p><p class="ovs" id="ovS">每搖勻一種風味粉就得分。iPhone 要先按「開啟搖動感應」，不想開也可以連點杯子。一局 40 秒。</p><button class="btn" id="go" type="button">開始</button></div>
+</div>
+<p class="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
+<script src="games.js?v=1"></script>
+<script src="shake.js?v=1"></script>
+</body>
+</html>
