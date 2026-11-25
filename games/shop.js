@@ -4,10 +4,10 @@ var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('
 var how=d.getElementById('how'),ovlogo=d.getElementById('ovlogo'),wrap=d.getElementById('wrap');
 var hud=d.getElementById('hud'),fine=d.getElementById('fine');
 var elLv=d.getElementById('lv'),elTime=d.getElementById('time'),elMoney=d.getElementById('money'),elGoal=d.getElementById('goal');
-var elCusts=d.getElementById('custs'),elTray=d.getElementById('tray'),elShaker=d.getElementById('shaker');
+var elCusts=d.getElementById('custs');
 var elRaws=d.getElementById('raws'),elFryers=d.getElementById('fryers'),elFlavs=d.getElementById('flavs');
-var drinkBtn=d.getElementById('drinkBtn'),drinkFill=d.getElementById('drinkFill'),trashBtn=d.getElementById('trashBtn');
-var shakerSlot=d.querySelector('.shaker-slot');
+var elPlates=d.getElementById('plates'),elServes=d.getElementById('serves'),elDrinks=d.getElementById('drinks');
+var trashBtn=d.getElementById('trashBtn'),pauseBtn=d.getElementById('pauseBtn');
 var KEY='pcGameShopBest';
 var best=G.getBest(KEY);
 var SEATS=4;
@@ -27,12 +27,12 @@ var FLAV={
 var FOODS=['fries','loopy','pops'],FLAVS=['onion','bbq','cheese','chili'];
 var SKINS=['a','b','c','d'];
 var LEVELS=[
-  {goal:360,time:90,fryers:2,spawn:4.5,patience:20,cook:3.2,burn:6.2,combo:0.18,drink:1.6},
+  {goal:360,time:90,fryers:3,spawn:4.5,patience:20,cook:3.2,burn:6.2,combo:0.18,drink:1.6},
   {goal:640,time:90,fryers:3,spawn:3.3,patience:15,cook:2.7,burn:5.3,combo:0.4,drink:1.4},
   {goal:900,time:90,fryers:3,spawn:2.6,patience:12,cook:2.3,burn:4.6,combo:0.55,drink:1.2}
 ];
-var run=false,lv=0,timeLeft=90,money=0,levelMoney=0,fryers=[],shaker=null,tray=[],sel=null;
-var drinkT=-1,custs=[],spawnT=0,uid=1,last=0,raf=0,toastT=0,toastMsg='',dirty=true,coins=[];
+var run=false,lv=0,timeLeft=90,money=0,levelMoney=0,fryers=[],plates=[],serves=[],drinks=[],sel=null;
+var custs=[],spawnT=0,uid=1,last=0,raf=0,toastT=0,toastMsg='',dirty=true,coins=[];
 function mark(){dirty=true}
 function L(){return LEVELS[lv]}
 function nextId(){return uid++}
@@ -65,10 +65,12 @@ function makeOrder(comboChance){
 function resetLevel(keepMoney){
   var cfg=L();
   timeLeft=cfg.time;levelMoney=0;spawnT=0.25;
-  fryers=[];for(var i=0;i<cfg.fryers;i++)fryers.push({id:i,food:null,t:0,state:'empty'});
-  shaker=null;tray=[];sel=null;drinkT=-1;custs=[];coins=[];
+  fryers=[];for(var i=0;i<3;i++)fryers.push({id:i,food:null,t:0,state:'empty'});
+  plates=[null,null,null];serves=[null,null,null];
+  drinks=[{t:-1,cup:null},{t:-1,cup:null},{t:-1,cup:null}];
+  sel=null;custs=[];coins=[];
   if(!keepMoney)money=0;
-  elLv.textContent=String(lv+1);
+  elLv.textContent=String(lv+1)+'/3';
   elGoal.textContent='$'+cfg.goal;
   elMoney.textContent='$'+money;
   elTime.textContent=String(Math.ceil(timeLeft));
@@ -106,8 +108,9 @@ function tapFryer(i){
   if(!run)return;
   var f=fryers[i];
   if(f.state==='ready'){
-    if(shaker){toast('搖搖杯還有東西');return}
-    shaker={id:nextId(),type:f.food,flavor:null,shaking:0};
+    var slot=-1;for(var p=0;p<plates.length;p++)if(!plates[p]){slot=p;break}
+    if(slot<0){toast('待調味盤滿了');return}
+    plates[slot]={id:nextId(),type:f.food,flavor:null,shaking:0};
     f.food=null;f.t=0;f.state='empty';
     render();return;
   }
@@ -118,32 +121,59 @@ function tapFryer(i){
 }
 
 function pickFlav(k){
-  if(!run||!shaker||shaker.shaking)return;
-  if(shaker.flavor)return;
-  shaker.flavor=k;shaker.shaking=0.55;
+  if(!run)return;
+  var slot=-1;
+  if(sel!=null){
+    for(var i=0;i<plates.length;i++){
+      if(plates[i]&&plates[i].id===sel&&!plates[i].flavor&&!plates[i].shaking)slot=i;
+    }
+  }
+  if(slot<0){
+    for(var i=0;i<plates.length;i++){
+      if(plates[i]&&!plates[i].flavor&&!plates[i].shaking){slot=i;break}
+    }
+  }
+  if(slot<0){toast('先把炸好的放到待調味盤');return}
+  plates[slot].flavor=k;plates[slot].shaking=0.55;
   render();
 }
 
-function takeDrink(){
+function takeDrink(i){
   if(!run)return;
-  if(drinkT>=0)return;
-  if(tray.length>=4){toast('出餐盤滿了');return}
-  drinkT=0;render();
+  if(i==null)i=0;
+  var m=drinks[i];
+  if(!m)return;
+  if(m.cup){
+    if(autoServeItem(m.cup))return;
+    sel=(sel===m.cup.id)?null:m.cup.id;
+    render();return;
+  }
+  if(m.t>=0)return;
+  m.t=0;render();
 }
 
 function trash(){
   if(!run)return;
   if(sel!=null){
-    tray=tray.filter(function(it){return it.id!==sel});
-    sel=null;render();return;
+    for(var i=0;i<serves.length;i++)if(serves[i]&&serves[i].id===sel){serves[i]=null;sel=null;render();return}
+    for(var i=0;i<plates.length;i++)if(plates[i]&&plates[i].id===sel&&!plates[i].shaking){plates[i]=null;sel=null;render();return}
+    for(var i=0;i<drinks.length;i++)if(drinks[i].cup&&drinks[i].cup.id===sel){drinks[i].cup=null;sel=null;render();return}
   }
-  if(shaker&&!shaker.shaking){shaker=null;render();return}
+  for(var i=0;i<plates.length;i++)if(plates[i]&&!plates[i].shaking&&!plates[i].flavor){plates[i]=null;render();return}
   toast('先點要丟掉的餐點');
 }
 
 function findItem(id){
-  for(var i=0;i<tray.length;i++)if(tray[i].id===id)return {it:tray[i],idx:i};
+  for(var i=0;i<serves.length;i++)if(serves[i]&&serves[i].id===id)return {it:serves[i],idx:i,kind:'serve'};
+  for(var i=0;i<drinks.length;i++)if(drinks[i].cup&&drinks[i].cup.id===id)return {it:drinks[i].cup,idx:i,kind:'drink'};
+  for(var i=0;i<plates.length;i++)if(plates[i]&&plates[i].id===id)return {it:plates[i],idx:i,kind:'plate'};
   return null;
+}
+function removeFound(found){
+  if(!found)return;
+  if(found.kind==='serve')serves[found.idx]=null;
+  else if(found.kind==='drink')drinks[found.idx].cup=null;
+  else if(found.kind==='plate')plates[found.idx]=null;
 }
 
 function spawnCoins(slot){
@@ -163,7 +193,8 @@ function serveTo(c, it, idx){
   }
   if(match<0)return false;
   c.order[match].done=1;
-  tray.splice(idx,1);sel=null;
+  removeFound(findItem(it.id));
+  sel=null;
   var leftover=c.order.filter(function(o){return !o.done});
   if(leftover.length===0){
     var price=0;
@@ -178,15 +209,19 @@ function serveTo(c, it, idx){
   return true;
 }
 
-function autoServe(id){
-  var found=findItem(id);
-  if(!found)return false;
+function autoServeItem(it){
+  if(!it)return false;
   var list=custs.slice().sort(function(a,b){return a.patience-b.patience});
   for(var i=0;i<list.length;i++){
     if(list[i].leave||list[i].arrive>0)continue;
-    if(serveTo(list[i],found.it,found.idx))return true;
+    if(serveTo(list[i],it))return true;
   }
   return false;
+}
+function autoServe(id){
+  var found=findItem(id);
+  if(!found)return false;
+  return autoServeItem(found.it);
 }
 
 function tapTray(id){
@@ -242,23 +277,24 @@ function update(dt){
       if(f.state!==prev)mark();
     }
   });
-  if(shaker&&shaker.shaking>0){
-    shaker.shaking-=dt;
-    if(shaker.shaking<=0){
-      if(tray.length>=4){shaker.shaking=0.1}
-      else{
-        tray.push({id:shaker.id,type:shaker.type,flavor:shaker.flavor});
-        shaker=null;mark();
-      }
+  plates.forEach(function(p,i){
+    if(!p||!(p.shaking>0))return;
+    p.shaking-=dt;
+    if(p.shaking<=0){
+      var slot=-1;for(var s=0;s<serves.length;s++)if(!serves[s]){slot=s;break}
+      if(slot<0){p.shaking=0.1;return}
+      serves[slot]={id:p.id,type:p.type,flavor:p.flavor};
+      plates[i]=null;mark();
     }
-  }
-  if(drinkT>=0){
-    drinkT+=dt;
-    if(drinkT>=cfg.drink){
-      if(tray.length>=4){drinkT=cfg.drink-0.05}
-      else{tray.push({id:nextId(),type:'drink',flavor:null});drinkT=-1;mark()}
+  });
+  drinks.forEach(function(m){
+    if(m.t<0)return;
+    m.t+=dt;
+    if(m.t>=cfg.drink){
+      if(m.cup){m.t=cfg.drink-0.05;return}
+      m.cup={id:nextId(),type:'drink',flavor:null};m.t=-1;mark();
     }
-  }
+  });
   custs.forEach(function(c){
     if(c.arrive>0){c.arrive-=dt;if(c.arrive<0)c.arrive=0;return}
     if(c.leave){c.leaveT-=dt;return}
@@ -314,35 +350,51 @@ function render(){
     });
   }
 
-  if(!shaker){
-    elShaker.innerHTML='';
-    if(shakerSlot)shakerSlot.classList.remove('busy');
-  }else{
-    elShaker.innerHTML=itemHtml(shaker,'in-shake')+(shaker.shaking>0?'<em>搖匀中</em>':(shaker.flavor?'':'<em>選風味粉</em>'));
-    if(shakerSlot)shakerSlot.classList.toggle('busy',shaker.shaking>0);
+  function slotHtml(it,kind,i,lab){
+    var busy=it&&it.shaking>0?' busy':'';
+    var hold=it?('<div class="hold">'+itemHtml(it,it.id===sel?'picked':'')+(it.shaking>0?'':'')+'</div>'):'';
+    return '<button class="slot '+kind+busy+'" data-kind="'+kind+'" data-i="'+i+'" type="button"><img class="dish" src="'+IMG+'plate.webp" alt="" draggable="false">'+hold+'<span class="plab">'+lab+'</span></button>';
   }
-
-  elTray.innerHTML=tray.length?tray.map(function(it){return itemHtml(it,it.id===sel?'picked':'')}).join(''):'';
-  [].forEach.call(elTray.querySelectorAll('.item'),function(el){
+  elPlates.innerHTML=plates.map(function(it,i){
+    var lab=!it?'待調味':(it.shaking>0?'調味中':(it.flavor?'好了':'選風味粉'));
+    return slotHtml(it,'plate',i,lab);
+  }).join('');
+  elServes.innerHTML=serves.map(function(it,i){
+    return slotHtml(it,'serve',i,it?'出餐':'出餐盤');
+  }).join('');
+  [].forEach.call((elPlates&&elPlates.querySelectorAll('.item'))||[],function(el){
+    bindItem(el,+el.getAttribute('data-id'));
+  });
+  [].forEach.call((elServes&&elServes.querySelectorAll('.item'))||[],function(el){
     bindItem(el,+el.getAttribute('data-id'));
   });
 
   elFryers.innerHTML=fryers.map(function(f,i){
     var st=f.state;
-    var lab=st==='empty'?'空鍋':(st==='cook'?'油炸中':(st==='ready'?'好了，點進杯子':(st==='burnt'?'焦了，點掉':'')));
+    var lab=st==='empty'?'空鍋':(st==='cook'?'油炸中':(st==='ready'?'好了，點到盤子':(st==='burnt'?'焦了，點掉':'')));
     var pct=0;
     if(st==='cook')pct=Math.min(100,(f.t/cfg.cook)*100);
     else if(st==='ready'||st==='burnt')pct=100;
     var src=st==='burnt'?IMG+'fryer-burnt.webp':((st==='cook'||st==='ready')?IMG+'fryer-cook.webp':IMG+'fryer-empty.webp');
-    return '<button class="fryer '+st+'" data-i="'+i+'" type="button"><span class="ring" style="--p:'+pct+'"></span><span class="bubbles"><i></i><i></i><i></i></span><img class="art" src="'+src+'" alt="" draggable="false"><span class="plab">'+lab+'</span></button>';
+    var food=(f.food&&st!=='empty')?'<img class="food-in" src="'+FOOD[f.food].img+'" alt="" draggable="false">':'';
+    return '<button class="fryer '+st+'" data-i="'+i+'" type="button"><span class="ring" style="--p:'+pct+'"></span><span class="bubbles"><i></i><i></i><i></i></span><img class="art" src="'+src+'" alt="" draggable="false">'+food+'<span class="plab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elFryers.querySelectorAll('.fryer'),function(btn){
     btn.addEventListener('click',function(){tapFryer(+btn.getAttribute('data-i'))});
   });
 
-  var fillPct=drinkT<0?0:Math.min(1,drinkT/cfg.drink);
-  if(drinkFill)drinkFill.style.height=(fillPct*28)+'px';
-  drinkBtn.className='prop drink-eq'+(drinkT>=0?' busy':'');
+  elDrinks.innerHTML=drinks.map(function(m,i){
+    var fillPct=m.t<0?0:Math.min(1,m.t/cfg.drink);
+    var lab=m.cup?'點杯子':(m.t>=0?'裝杯中':'飲料機');
+    var cup=m.cup?'<img class="cup-out item'+(m.cup.id===sel?' picked':'')+'" data-id="'+m.cup.id+'" src="'+FOOD.drink.img+'" alt="" draggable="false">':'';
+    return '<button class="prop drink-eq'+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button"><img class="art" src="'+IMG+'drink-machine.webp" alt="" draggable="false"><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'<span class="plab">'+lab+'</span></button>';
+  }).join('');
+  [].forEach.call(elDrinks.querySelectorAll('.drink-eq'),function(btn){
+    btn.addEventListener('click',function(){takeDrink(+btn.getAttribute('data-i'))});
+  });
+  [].forEach.call(elDrinks.querySelectorAll('.cup-out'),function(el){
+    bindItem(el,+el.getAttribute('data-id'));
+  });
 
   var tip=d.getElementById('toast');
   if(!tip){
@@ -370,7 +422,7 @@ function onDragMove(e){
   if(!drag.moved&&dx*dx+dy*dy<144)return;
   drag.moved=true;
   if(!ghost){
-    var src=elTray.querySelector('.item[data-id="'+drag.id+'"]');
+    var src=d.querySelector('.item[data-id="'+drag.id+'"], .cup-out[data-id="'+drag.id+'"]');
     if(!src)return;
     ghost=src.cloneNode(true);
     ghost.classList.add('ghost');
@@ -420,8 +472,11 @@ function paint(){
     bar.style.width=(pct*100)+'%';
     bar.style.background=pct>0.45?'#148c44':(pct>0.22?'#e0a800':'#c0392b');
   });
-  var fillPct=drinkT<0?0:Math.min(1,drinkT/L().drink);
-  if(drinkFill)drinkFill.style.height=(fillPct*28)+'px';
+  var cfgP=L();
+  drinks.forEach(function(m,i){
+    var fill=d.querySelector('.drink-eq[data-i="'+i+'"] .drink-fill');
+    if(fill)fill.style.height=((m.t<0?0:Math.min(1,m.t/cfgP.drink))*22)+'px';
+  });
   var tip=d.getElementById('toast');
   if(tip){tip.textContent=toastMsg;tip.className='toast'+(toastT>0?' on':'')}
 }
@@ -436,9 +491,17 @@ function loop(ts){
 }
 
 function showHud(on){
-  if(hud)hud.hidden=!on;
+  if(pauseBtn)pauseBtn.hidden=!on;
   if(on)d.body.classList.add('playing');
   else d.body.classList.remove('playing');
+}
+function pauseGame(){
+  if(!run)return;
+  run=false;cancelAnimationFrame(raf);
+  ov.classList.remove('runstart','shopstart');if(how)how.hidden=true;if(ovlogo)ovlogo.hidden=true;if(fine)fine.hidden=true;
+  showHud(false);
+  ovT.textContent='暫停中';ovS.textContent='點按鈕再開始';
+  go.textContent='重新開始';go.dataset.next='';ov.hidden=false;
 }
 
 function start(){
@@ -494,8 +557,8 @@ go.addEventListener('click',function(){
   }
   start();
 });
-drinkBtn.addEventListener('click',takeDrink);
-trashBtn.addEventListener('click',trash);
+if(trashBtn)trashBtn.addEventListener('click',trash);
+if(pauseBtn)pauseBtn.addEventListener('click',pauseGame);
 d.addEventListener('visibilitychange',function(){
   if(d.hidden&&run){
     run=false;cancelAnimationFrame(raf);
@@ -521,9 +584,16 @@ window.PCShop={
   seed:function(){
     if(!fryers.length)return;
     startFry('fries');
-    if(fryers[1]){startFry('loopy');fryers[1].t=1.2}
+    startFry('loopy');
+    startFry('pops');
     if(fryers[0])fryers[0].t=1.6;
-    while(custs.length<3)spawnCust(true);
+    if(fryers[1])fryers[1].t=1.2;
+    if(fryers[2])fryers[2].t=0.8;
+    plates[0]={id:nextId(),type:'fries',flavor:null,shaking:0};
+    serves[0]={id:nextId(),type:'loopy',flavor:'cheese'};
+    drinks[0].t=0.6;
+    drinks[1].cup={id:nextId(),type:'drink',flavor:null};
+    while(custs.length<4)spawnCust(true);
     custs.forEach(function(c){c.enter=0;c.fromDoor=false;c.arrive=0});
     mark();render();paint();
   },
@@ -531,19 +601,20 @@ window.PCShop={
     if(!custs.length)spawnCust(true);
     var c=custs[0];
     var o=c.order.filter(function(x){return !x.done})[0]||c.order[0];
+    var slot=-1;for(var i=0;i<serves.length;i++)if(!serves[i]){slot=i;break}
+    if(slot<0)slot=0;
     if(o.type==='drink'){
-      tray.push({id:nextId(),type:'drink',flavor:null});
+      serves[slot]={id:nextId(),type:'drink',flavor:null};
     }else{
-      tray.push({id:nextId(),type:o.type,flavor:o.flavor});
+      serves[slot]={id:nextId(),type:o.type,flavor:o.flavor};
     }
     mark();render();paint();
   },
   pay:function(){
-    if(!custs.length||!tray.length)return;
-    var found=findItem(tray[0].id);
-    if(found)serveTo(custs[0],found.it,found.idx);
+    for(var i=0;i<serves.length;i++)if(serves[i]&&autoServeItem(serves[i]))return;
+    for(var i=0;i<drinks.length;i++)if(drinks[i].cup&&autoServeItem(drinks[i].cup))return;
   },
-  info:function(){return {run:run,lv:lv,money:money,timeLeft:timeLeft,tray:tray.length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}}
+  info:function(){return {run:run,lv:lv,money:money,timeLeft:timeLeft,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}}
 };
 
 lv=0;resetLevel(false);
