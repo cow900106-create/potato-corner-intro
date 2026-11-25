@@ -34,7 +34,9 @@ function size(){
   cv.style.width=W+'px';cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   horizon=H*0.28;
-  focal=W*1.28;
+  // near road slightly past the screen edges; character/obstacles scale with it
+  var fill=1.03;
+  focal=W*fill*NEAR/(2*LANE*ROAD);
   camH=(H*FEET-horizon)*NEAR/focal;
   draw();
 }
@@ -102,7 +104,7 @@ function roll(){
 
 /* -------- spawn -------- */
 function resetWorld(){
-  objs=[];pops=[];camZ=0;speed=26;dist=0;coins=0;setScore(0);
+  objs=[];pops=[];camZ=0;speed=21.5;dist=0;coins=0;setScore(0);
   player.lane=0;player.x=0;player.y=0;player.vy=0;player.state='run';player.rollT=0;player.tilt=0;player.landT=0;
   crashing=false;crashT=0;
   var base=camZ+NEAR;
@@ -225,7 +227,7 @@ function update(dt){
     if(crashT>0.6)end();
     return;
   }
-  speed=Math.min(58,26+dist*0.08);
+  speed=Math.min(48,21.5+dist*0.066);
   camZ+=speed*dt;
   dist=camZ*1.15;
   elDist.textContent=String(Math.floor(dist));
@@ -355,33 +357,29 @@ function drawSky(){
 
 function drawRoad(){
   var segs=26,rh=roadHalf();
+  function trap(half,zA,zB){
+    var a=proj(-half,0,zA),b=proj(half,0,zA),c=proj(half,0,zB),d=proj(-half,0,zB);
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();
+  }
   for(var i=segs;i>=0;i--){
     var z0=NEAR+(FAR-NEAR)*(i+1)/segs;
     var z1=NEAR+(FAR-NEAR)*i/segs;
-    function trap(half,zA,zB){
-      var a=proj(-half,0,zA),b=proj(half,0,zA),c=proj(half,0,zB),d=proj(-half,0,zB);
-      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();
-    }
-    ctx.fillStyle=(i%2===0)?'#0f7a38':'#148c44';
-    trap(14,z0,z1);ctx.fill();
     ctx.fillStyle=(i%2===0)?'#e8c94a':'#d6b536';
     trap(rh,z0,z1);ctx.fill();
   }
   var yN=proj(0,0,NEAR).y;
   if(yN<H){
-    ctx.fillStyle='#0f7a38';
-    ctx.fillRect(0,yN-1,W,H-yN+3);
+    var zBot=Math.max(0.55,camH*focal/Math.max(8,H-horizon));
     var Lft=proj(-rh,0,NEAR),Rgt=proj(rh,0,NEAR);
-    var widen=(H-yN)/(H*0.22);
+    var Lb=proj(-rh,0,zBot),Rb=proj(rh,0,zBot);
     ctx.fillStyle='#e8c94a';
     ctx.beginPath();
     ctx.moveTo(Lft.x,yN);ctx.lineTo(Rgt.x,yN);
-    ctx.lineTo(Rgt.x+(Rgt.x-W/2)*widen,H+2);
-    ctx.lineTo(Lft.x+(Lft.x-W/2)*widen,H+2);
+    ctx.lineTo(Rb.x,H+2);ctx.lineTo(Lb.x,H+2);
     ctx.closePath();ctx.fill();
   }
-  // curb
-  ctx.strokeStyle='rgba(11,97,46,0.35)';
+  // road edge
+  ctx.strokeStyle='rgba(120,90,10,0.35)';
   var a=proj(-rh,0.01,NEAR),b=proj(-rh,0.01,FAR*0.7);
   var c=proj(rh,0.01,NEAR),e=proj(rh,0.01,FAR*0.7);
   ctx.lineWidth=2;
