@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#148c44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>土豆跑酷｜薯條小遊戲（非官方）</title>
+<meta name="description" content="三線道無盡跑酷。左右滑換道，上滑跳、下滑翻滾，避開薯條、雞米花、捲捲薯和飲料，收集風味粉。非官方小遊戲。">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="games.css?v=2">
+</head>
+<body class="play runpage">
+<header class="topbar">
+<a class="back" href="index.html">選單</a>
+<a class="brand" href="../index.html"><img src="../assets/logo.webp" alt="Potato Corner" height="28"></a>
+<a class="home" href="../index.html">菜單</a>
+</header>
+<h1>土豆跑酷</h1>
+<p class="hint">左右滑換道，上滑跳，下滑翻滾。桌機用方向鍵。</p>
+<div class="hud"><span>分數 <b id="score">0</b></span><span>距離 <b id="dist">0</b> 公尺</span><span>最高 <b id="best">0</b></span></div>
+<div class="stagewrap" id="wrap">
+<canvas id="stage" aria-label="土豆跑酷遊戲畫面"></canvas>
+<div class="overlay runstart" id="ov">
+<img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
+<p class="ovt" id="ovT">土豆跑酷</p>
+<p class="ovs" id="ovS">往前自動跑，越跑越快。閃過障礙、收集風味粉。</p>
+<div class="how" id="how">
+<div><span>← →</span> 左右滑：換跑道</div>
+<div><span>↑</span> 上滑：跳過低的捲捲薯、雞米花</div>
+<div><span>↓</span> 下滑：從薯條拱門底下翻滾</div>
+<div><span>！</span> 高的飲料杯請換道閃避</div>
+</div>
+<button class="btn" id="go" type="button">開始</button>
+</div>
+</div>
+<p class="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
+<script src="games.js?v=2"></script>
+<script src="run.js?v=4"></script>
+</body>
+</html>
