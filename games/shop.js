@@ -39,8 +39,8 @@ function L(){
   var t=1-Math.exp(-Math.max(0,money)/700);
   return {
     fryers:3,
-    spawn:4.5-t*2.2,
-    patience:25-t*6,
+    spawn:5.8-t*2.0,
+    patience:Math.max(28,40-t*12),
     cook:4.0,
     burn:7.75,
     combo:0.18+t*0.5,
@@ -221,6 +221,41 @@ function sfxOver(){
     o.connect(g);connectOut(g);o.start(tt);o.stop(tt+0.5);
   });
 }
+function sfxReady(){
+  if(!unlockAudio()||!master)return;
+  var t=actx.currentTime;
+  function chime(freq,delay,dur,peak){
+    var tt=t+delay;
+    var o=actx.createOscillator();
+    o.type='triangle';o.frequency.value=freq;
+    var o2=actx.createOscillator();
+    o2.type='sine';o2.frequency.value=freq*2;
+    var g=actx.createGain();
+    env(g,tt,peak,0.008,Math.max(0,dur-0.12),0.2);
+    var g2=actx.createGain();
+    env(g2,tt,peak*0.22,0.008,Math.max(0,dur-0.14),0.22);
+    o.connect(g);connectOut(g);
+    o2.connect(g2);connectOut(g2);
+    o.start(tt);o.stop(tt+dur+0.1);
+    o2.start(tt);o2.stop(tt+dur+0.1);
+  }
+  chime(1046.5,0,0.32,0.28);
+  chime(784.0,0.18,0.42,0.26);
+}
+function sfxWarn(){
+  if(!unlockAudio()||!master)return;
+  var t=actx.currentTime;
+  [0,0.11].forEach(function(dt){
+    var o=actx.createOscillator();
+    o.type='square';o.frequency.value=740;
+    var f=actx.createBiquadFilter();
+    f.type='lowpass';f.frequency.value=2000;
+    var g=actx.createGain();
+    env(g,t+dt,0.16,0.004,0.045,0.04);
+    o.connect(f);f.connect(g);connectOut(g);
+    o.start(t+dt);o.stop(t+dt+0.12);
+  });
+}
 function startSizzle(i,state){
   if(!unlockAudio()||!master)return;
   var gain=state==='burnt'?0.045:(state==='ready'?0.035:0.05);
@@ -276,7 +311,7 @@ function sfxPeak(){
   }
   return p;
 }
-var SFX={drop:sfxDrop,sizzle:function(){startSizzle(0,'cook')},powder:sfxPowder,pour:sfxPour,ding:sfxDing,coins:sfxCoins,leave:sfxLeave,over:sfxOver};
+var SFX={drop:sfxDrop,sizzle:function(){startSizzle(0,'cook')},powder:sfxPowder,pour:sfxPour,ding:sfxDing,ready:sfxReady,warn:sfxWarn,coins:sfxCoins,leave:sfxLeave,over:sfxOver};
 syncMuteBtn();
 
 
@@ -340,7 +375,7 @@ function startFry(food){
   if(!run)return;
   for(var i=0;i<fryers.length;i++){
     if(fryers[i].state==='empty'){
-      fryers[i].food=food;fryers[i].t=0;fryers[i].state='cook';
+      fryers[i].food=food;fryers[i].t=0;fryers[i].state='cook';fryers[i].readySfx=false;fryers[i].warnSfx=false;
       sfxDrop();syncSizzle();
       render();return;
     }
@@ -355,12 +390,12 @@ function tapFryer(i){
     var slot=-1;for(var p=0;p<plates.length;p++)if(!plates[p]){slot=p;break}
     if(slot<0){toast('待調味區滿了');return}
     plates[slot]={id:nextId(),type:f.food,flavor:null,shaking:0};
-    f.food=null;f.t=0;f.state='empty';
+    f.food=null;f.t=0;f.state='empty';f.readySfx=false;f.warnSfx=false;
     syncSizzle();
     render();return;
   }
   if(f.state==='burnt'){
-    f.food=null;f.t=0;f.state='empty';
+    f.food=null;f.t=0;f.state='empty';f.readySfx=false;f.warnSfx=false;
     syncSizzle();
     render();return;
   }
@@ -530,7 +565,11 @@ function update(dt){
       f.t+=dt;
       if(f.t>=cfg.burn)f.state='burnt';
       else if(f.t>=cfg.cook)f.state='ready';
-      if(f.state!==prev){syncSizzle();mark();}
+      if(f.state!==prev){
+        if(prev==='cook'&&f.state==='ready'&&!f.readySfx){f.readySfx=true;sfxReady();}
+        syncSizzle();mark();
+      }
+      if(f.state==='ready'&&!f.warnSfx&&f.t>=cfg.burn-1.5){f.warnSfx=true;sfxWarn();}
     }
   });
   plates.forEach(function(p,i){
@@ -903,11 +942,11 @@ window.PCShop={
     for(var i=0;i<drinks.length;i++)if(drinks[i].cup&&autoServeItem(drinks[i].cup))return;
   },
   end:function(){lost=3;syncLives();gameOver();},
-  info:function(){return {run:run,money:money,lost:lost,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return f.state})}},
+  info:function(){return {run:run,money:money,lost:lost,serves:serves.filter(Boolean).length,custs:custs.length,fryers:fryers.map(function(f){return {state:f.state,t:f.t,readySfx:!!f.readySfx,warnSfx:!!f.warnSfx}}),level:L()}},
   sfx:{
     unlock:unlockAudio,
     play:function(name){if(SFX[name])SFX[name]()},
-    names:['drop','sizzle','powder','pour','ding','coins','leave','over'],
+    names:['drop','sizzle','powder','pour','ding','ready','warn','coins','leave','over'],
     muted:function(){return muted},
     setMuted:setMuted,
     ctxState:function(){return actx?actx.state:'none'},
