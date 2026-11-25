@@ -9,30 +9,32 @@
 <meta name="description" content="經營一間 Potato Corner 小店：下鍋、搖粉、做飲料，在客人離開前把餐點送對。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=7">
+<link rel="stylesheet" href="games.css?v=8">
 </head>
 <body class="play shoppage">
 <div class="stagewrap" id="wrap">
 <div class="shop-stage" id="stage" aria-label="薯條小店長遊戲畫面">
   <a class="shopback" href="index.html">選單</a>
   <div class="shophud" id="hud" hidden>
-    <span class="coin">金幣 <b id="money">0</b></span>
+    <span class="coin">金幣 <b id="money">$0</b></span>
     <span>關卡 <b id="lv">1</b>/3</span>
-    <span>目標 <b id="goal">0</b></span>
+    <span>目標 <b id="goal">$360</b></span>
     <span>剩下 <b id="time">90</b> 秒</span>
   </div>
-  <div class="shop-sky" aria-hidden="true"></div>
+  <div class="plaza" aria-hidden="true"></div>
   <div class="custs" id="custs"></div>
   <div class="counter" id="counter">
     <div class="counter-deck">
       <div class="serve-row">
-        <div class="eq tray-eq">
-          <span class="eq-lab">出餐盤</span>
+        <div class="prop tray-slot">
+          <img class="art tray-art" src="img/shop/tray.webp" alt="" draggable="false">
           <div class="tray" id="tray"></div>
+          <span class="plab">出餐檯</span>
         </div>
-        <div class="eq shake-eq">
-          <span class="eq-lab">搖搖杯</span>
+        <div class="prop shaker-slot">
+          <img class="art shaker-art" src="img/shop/shaker.webp" alt="" draggable="false">
           <div class="shaker" id="shaker"></div>
+          <span class="plab">搖搖杯</span>
         </div>
       </div>
       <div class="cook-row">
@@ -41,14 +43,14 @@
       </div>
       <div class="tool-row">
         <div class="jars" id="flavs"></div>
-        <button class="eq drink-eq" id="drinkBtn" type="button">
-          <span class="drink-body"><i id="drinkFill"></i></span>
-          <img src="img/drink.png" alt="">
-          <span>飲料機</span>
+        <button class="prop drink-eq" id="drinkBtn" type="button">
+          <img class="art" src="img/shop/drink-machine.webp" alt="" draggable="false">
+          <i class="drink-fill" id="drinkFill"></i>
+          <span class="plab">飲料機</span>
         </button>
-        <button class="eq trash-eq" id="trashBtn" type="button">
-          <span class="bin"></span>
-          <span>丟掉</span>
+        <button class="prop trash-eq" id="trashBtn" type="button">
+          <img class="art" src="img/shop/trash.webp" alt="" draggable="false">
+          <span class="plab">丟掉</span>
         </button>
       </div>
     </div>
@@ -70,6 +72,6 @@
 </div>
 </div>
 <script src="games.js?v=2"></script>
-<script src="shop.js?v=3"></script>
+<script src="shop.js?v=4"></script>
 </body>
 </html>
