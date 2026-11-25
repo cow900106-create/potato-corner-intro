@@ -200,18 +200,61 @@ body.play.shoppage.playing .hud-pause{display:block}
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
 }
 .shop-stage .fryer .art{object-fit:cover;width:112%;height:112%}
-.shop-stage .slot .dish{object-fit:fill;width:108%;height:108%}
+.shop-stage .slot .dish{object-fit:contain;width:90%;height:90%;z-index:1}
 .shop-stage .drink-eq .art{object-fit:contain;width:108%;height:108%}
 .shop-stage .raw img,.shop-stage .flav img{width:100%;height:96%;object-fit:contain}
 
-.shop-stage .fryer .food-in{
-  position:absolute;left:50%;top:50%;width:58%;height:58%;
-  transform:translate(-50%,-54%);margin:0;
-  object-fit:contain;pointer-events:none;z-index:2;
-  filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));
+.shop-stage .fryer{--cook:1}
+.shop-stage .fryer .art{z-index:1}
+.shop-stage .fryer .oil-food{
+  position:absolute;left:50%;top:50%;width:112%;height:112%;
+  transform:translate(-50%,-50%);margin:0;
+  object-fit:cover;pointer-events:none;z-index:2;
   max-width:none;max-height:none;
+  filter:brightness(calc(1.32 - 0.32 * var(--cook,1))) saturate(calc(0.55 + 0.45 * var(--cook,1))) hue-rotate(calc((1 - var(--cook,1)) * -12deg));
 }
-.shop-stage .fryer.burnt .food-in{filter:grayscale(.5) brightness(.65)}
+.shop-stage .fryer.ready .oil-food,
+.shop-stage .fryer.burnt .oil-food{filter:none}
+.shop-stage .fryer .bubbles,
+.shop-stage .fryer .smoke{
+  position:absolute;left:9%;right:9%;top:16%;bottom:28%;
+  pointer-events:none;z-index:3;overflow:hidden;display:none;
+}
+.shop-stage .fryer.cook .bubbles,
+.shop-stage .fryer.ready .bubbles{display:block}
+.shop-stage .fryer.burnt .smoke{display:block}
+.shop-stage .fryer .bubbles i{
+  position:absolute;bottom:10%;width:7px;height:7px;margin:0;
+  border-radius:50%;background:rgba(255,248,200,.62);
+  box-shadow:0 0 3px rgba(255,236,160,.75);
+  animation:oilbubble 1.15s ease-in infinite;
+}
+.shop-stage .fryer .bubbles i:nth-child(1){left:14%;animation-duration:1.05s}
+.shop-stage .fryer .bubbles i:nth-child(2){left:28%;animation-duration:1.32s;animation-delay:.15s;width:5px;height:5px}
+.shop-stage .fryer .bubbles i:nth-child(3){left:42%;animation-duration:1.12s;animation-delay:.35s}
+.shop-stage .fryer .bubbles i:nth-child(4){left:55%;animation-duration:1.4s;animation-delay:.08s;width:6px;height:6px}
+.shop-stage .fryer .bubbles i:nth-child(5){left:68%;animation-duration:1.18s;animation-delay:.28s}
+.shop-stage .fryer .bubbles i:nth-child(6){left:80%;animation-duration:1.26s;animation-delay:.5s;width:5px;height:5px}
+.shop-stage .fryer .bubbles i:nth-child(7){left:22%;bottom:28%;animation-duration:1.08s;animation-delay:.4s;width:4px;height:4px}
+.shop-stage .fryer .bubbles i:nth-child(8){left:72%;bottom:30%;animation-duration:1.22s;animation-delay:.22s;width:5px;height:5px}
+@keyframes oilbubble{
+  0%{transform:translateY(0) scale(.5);opacity:0}
+  18%{opacity:.85}
+  100%{transform:translateY(-130%) scale(1.15);opacity:0}
+}
+.shop-stage .fryer .smoke i{
+  position:absolute;bottom:0;width:28%;height:55%;margin:0;
+  border-radius:50%;background:rgba(70,62,54,.4);filter:blur(5px);
+  animation:fryersmoke 1.7s ease-out infinite;
+}
+.shop-stage .fryer .smoke i:nth-child(1){left:12%;animation-delay:0s}
+.shop-stage .fryer .smoke i:nth-child(2){left:32%;animation-delay:.3s;width:22%}
+.shop-stage .fryer .smoke i:nth-child(3){left:52%;animation-delay:.55s}
+.shop-stage .fryer .smoke i:nth-child(4){left:70%;animation-delay:.2s;width:24%}
+@keyframes fryersmoke{
+  0%{transform:translateY(0) scale(.6);opacity:.5}
+  100%{transform:translateY(-80%) scale(1.7);opacity:0}
+}
 .shop-stage .fryer.ready{box-shadow:inset 0 0 0 3px #fce404,inset 0 2px 5px rgba(0,0,0,.45)}
 .shop-stage .fryer.cook{box-shadow:inset 0 0 0 3px rgba(252,228,4,.75),inset 0 2px 5px rgba(0,0,0,.5)}
 .shop-stage .fryer.burnt{box-shadow:inset 0 0 0 3px #8a3a18,inset 0 2px 5px rgba(0,0,0,.55)}
@@ -225,8 +268,30 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .slot .hold .item img{width:100%;height:100%;object-fit:contain;max-width:none;max-height:none}
 .shop-stage .slot .hold .item img.flav,
 .shop-stage .item img.flav{position:absolute;right:0;bottom:0;width:30%;height:30%;max-width:24px;max-height:24px;object-fit:contain;background:#fff;border-radius:50%;padding:1px;box-shadow:0 1px 0 rgba(0,0,0,.25);z-index:3}
-.shop-stage .slot.busy .dish{animation:shakeplate .16s linear infinite}
-@keyframes shakeplate{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.shop-stage .slot.filled .dish{opacity:0;visibility:hidden}
+.shop-stage .slot.busy .hold{animation:shakecup .16s linear infinite;overflow:visible}
+@keyframes shakecup{0%,100%{transform:translate(-50%,-50%) rotate(-7deg)}50%{transform:translate(-50%,-50%) rotate(7deg)}}
+.shop-stage .item .dust{
+  position:absolute;left:16%;right:16%;top:22%;bottom:10%;
+  border-radius:46%;pointer-events:none;z-index:2;mix-blend-mode:multiply;opacity:.52;
+}
+.shop-stage .item.flav-onion .dust{background:rgba(245,236,214,.8)}
+.shop-stage .item.flav-bbq .dust{background:rgba(132,74,32,.55)}
+.shop-stage .item.flav-cheese .dust{background:rgba(240,196,48,.62)}
+.shop-stage .item.flav-chili .dust{background:rgba(200,46,32,.5)}
+.shop-stage .sprinkles{position:absolute;inset:0;pointer-events:none;z-index:5;overflow:visible}
+.shop-stage .sprinkles i{
+  position:absolute;top:6%;width:5px;height:5px;margin:0;border-radius:50%;opacity:.95;
+  animation:fallpowder .5s linear infinite;
+}
+.shop-stage .slot.flav-onion .sprinkles i{background:#f3ead6;box-shadow:0 0 2px #fff}
+.shop-stage .slot.flav-bbq .sprinkles i{background:#7a4518}
+.shop-stage .slot.flav-cheese .sprinkles i{background:#f0c430}
+.shop-stage .slot.flav-chili .sprinkles i{background:#d42b1e}
+@keyframes fallpowder{
+  0%{transform:translateY(-6px) scale(1);opacity:.95}
+  100%{transform:translateY(34px) scale(.4);opacity:0}
+}
 
 .shop-stage .item{position:relative;width:100%;height:100%;display:grid;place-items:center;flex:none;border:2px solid transparent;border-radius:10px;touch-action:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));overflow:hidden;min-width:0;min-height:0}
 .shop-stage .item img{width:100%;height:100%;object-fit:contain;pointer-events:none;max-width:none;max-height:none}

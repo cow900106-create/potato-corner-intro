@@ -25,10 +25,10 @@ var DRINKS={
   tea:{id:'tea',name:'紅茶',img:IMG+'cup-tea.webp',machine:IMG+'drink-tea.webp'}
 };
 var FLAV={
-  onion:{name:'酸奶洋蔥',short:'洋蔥',img:IMG+'jar-onion.webp'},
-  bbq:{name:'碳烤BBQ',short:'BBQ',img:IMG+'jar-bbq.webp'},
-  cheese:{name:'香濃起司',short:'起司',img:IMG+'jar-cheese.webp'},
-  chili:{name:'香辣BBQ',short:'香辣',img:IMG+'jar-chili.webp'}
+  onion:{name:'酸奶洋蔥',short:'洋蔥',img:IMG+'powder-onion.webp'},
+  bbq:{name:'碳烤BBQ',short:'BBQ',img:IMG+'powder-bbq.webp'},
+  cheese:{name:'香濃起司',short:'起司',img:IMG+'powder-cheese.webp'},
+  chili:{name:'香辣BBQ',short:'香辣',img:IMG+'powder-chili.webp'}
 };
 var FOODS=['fries','loopy','pops'],FLAVS=['onion','bbq','cheese','chili'];
 var SKINS=['a','b','c','d'];
@@ -56,7 +56,9 @@ function drinkOf(it){return (it&&DRINKS[it.drink])?DRINKS[it.drink]:DRINKS.cola}
 function itemImg(it){return it.type==='drink'?drinkOf(it).img:FOOD[it.type].img}
 function itemHtml(it,cls){
   var flav=it.flavor?icon(FLAV[it.flavor].img,'flav'):'';
-  return '<div class="item '+(cls||'')+(it.burnt?' burnt':'')+'" data-id="'+it.id+'">'+icon(itemImg(it))+flav+'</div>';
+  var dust=it.flavor?'<i class="dust" aria-hidden="true"></i>':'';
+  var extra=(cls||'')+(it.flavor?' flav-'+it.flavor:'');
+  return '<div class="item '+extra+(it.burnt?' burnt':'')+'" data-id="'+it.id+'">'+icon(itemImg(it))+flav+dust+'</div>';
 }
 function skinSrc(skin,mood){return IMG+'cust-'+skin+'-'+mood+'.webp'}
 function moodOf(c){
@@ -119,7 +121,7 @@ function tapFryer(i){
   var f=fryers[i];
   if(f.state==='ready'){
     var slot=-1;for(var p=0;p<plates.length;p++)if(!plates[p]){slot=p;break}
-    if(slot<0){toast('待調味盤滿了');return}
+    if(slot<0){toast('待調味區滿了');return}
     plates[slot]={id:nextId(),type:f.food,flavor:null,shaking:0};
     f.food=null;f.t=0;f.state='empty';
     render();return;
@@ -143,7 +145,7 @@ function pickFlav(k){
       if(plates[i]&&!plates[i].flavor&&!plates[i].shaking){slot=i;break}
     }
   }
-  if(slot<0){toast('先把炸好的放到待調味盤');return}
+  if(slot<0){toast('先把炸好的放到待調味紙杯');return}
   plates[slot].flavor=k;plates[slot].shaking=0.55;
   render();
 }
@@ -381,8 +383,17 @@ function render(){
 
   function slotHtml(it,kind,i,lab){
     var busy=it&&it.shaking>0?' busy':'';
-    var hold=it?('<div class="hold">'+itemHtml(it,it.id===sel?'picked':'')+(it.shaking>0?'':'')+'</div>'):'';
-    return '<button class="cell slot '+kind+busy+'" data-kind="'+kind+'" data-i="'+i+'" type="button"><img class="dish" src="'+IMG+'plate-round.webp" alt="" draggable="false">'+hold+'<span class="plab">'+lab+'</span></button>';
+    var flavCls=it&&it.flavor?' flav-'+it.flavor:'';
+    var filled=it?' filled':'';
+    var dish='<img class="dish empty-cup" src="'+IMG+'cup-empty.webp" alt="" draggable="false">';
+    var sprinkles='';
+    if(it&&it.shaking>0){
+      sprinkles='<span class="sprinkles" aria-hidden="true">';
+      for(var n=0;n<10;n++)sprinkles+='<i style="left:'+(8+n*8)+'%;animation-delay:'+(n*0.05)+'s"></i>';
+      sprinkles+='</span>';
+    }
+    var hold=it?('<div class="hold">'+itemHtml(it,it.id===sel?'picked':'')+sprinkles+'</div>'):'';
+    return '<button class="cell slot '+kind+busy+flavCls+filled+'" data-kind="'+kind+'" data-i="'+i+'" type="button">'+dish+hold+'<span class="plab">'+lab+'</span></button>';
   }
   elPlates.innerHTML=plates.map(function(it,i){
     var lab=!it?'待調味':(it.shaking>0?'調味中':(it.flavor?'好了':'選粉'));
@@ -405,8 +416,15 @@ function render(){
     if(st==='cook')pct=Math.min(100,(f.t/cfg.cook)*100);
     else if(st==='ready'||st==='burnt')pct=100;
     var src=st==='burnt'?IMG+'fryer-wide-burnt.webp':((st==='cook'||st==='ready')?IMG+'fryer-wide-cook.webp':IMG+'fryer-wide-empty.webp');
-    var food=(f.food&&st!=='empty')?'<img class="food-in" src="'+FOOD[f.food].img+'" alt="" draggable="false">':'';
-    return '<button class="cell fryer '+st+'" data-i="'+i+'" type="button"><span class="ring" style="--p:'+pct+'"></span><img class="art" src="'+src+'" alt="" draggable="false">'+food+'<span class="plab">'+lab+'</span></button>';
+    var cook=st==='cook'?Math.min(1,f.t/cfg.cook):(st==='ready'||st==='burnt'?1:0);
+    var oil='';
+    if(f.food&&st!=='empty'){
+      var oilSrc=IMG+'oil-'+f.food+'-'+(st==='burnt'?'burnt':'gold')+'.webp';
+      oil='<img class="oil-food" src="'+oilSrc+'" alt="" draggable="false">'
+        +'<span class="bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>'
+        +'<span class="smoke" aria-hidden="true"><i></i><i></i><i></i><i></i></span>';
+    }
+    return '<button class="cell fryer '+st+'" data-i="'+i+'" type="button" style="--cook:'+cook.toFixed(3)+'"><span class="ring" style="--p:'+pct+'"></span><img class="art" src="'+src+'" alt="" draggable="false">'+oil+'<span class="plab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elFryers.querySelectorAll('.fryer'),function(btn){
     btn.addEventListener('click',function(){tapFryer(+btn.getAttribute('data-i'))});
@@ -482,12 +500,14 @@ d.addEventListener('pointercancel',onDragEnd);
 function paint(){
   var cfg=L();
   fryers.forEach(function(f,i){
-    var ring=d.querySelector('.fryer[data-i="'+i+'"] .ring');
-    if(!ring)return;
-    var pct=0;
-    if(f.state==='cook')pct=Math.min(100,(f.t/cfg.cook)*100);
-    else if(f.state==='ready'||f.state==='burnt')pct=100;
-    ring.style.setProperty('--p',String(pct));
+    var el=d.querySelector('.fryer[data-i="'+i+'"]');
+    if(!el)return;
+    var cook=0,pct=0;
+    if(f.state==='cook'){cook=Math.min(1,f.t/cfg.cook);pct=cook*100;}
+    else if(f.state==='ready'||f.state==='burnt'){cook=1;pct=100;}
+    el.style.setProperty('--cook',cook.toFixed(3));
+    var ring=el.querySelector('.ring');
+    if(ring)ring.style.setProperty('--p',String(pct));
   });
   custs.forEach(function(c){
     var bar=d.querySelector('.cust[data-slot="'+c.slot+'"] .pbar i');
@@ -595,9 +615,9 @@ window.PCShop={
     startFry('fries');
     startFry('loopy');
     startFry('pops');
-    if(fryers[0])fryers[0].t=1.6;
-    if(fryers[1])fryers[1].t=1.2;
-    if(fryers[2])fryers[2].t=0.8;
+    if(fryers[0])fryers[0].t=2.2;
+    if(fryers[1])fryers[1].t=1.8;
+    if(fryers[2])fryers[2].t=1.4;
     plates[0]={id:nextId(),type:'fries',flavor:null,shaking:0};
     serves[0]={id:nextId(),type:'loopy',flavor:'cheese'};
     drinks[0].cup={id:nextId(),type:'drink',drink:'cola',flavor:null};
@@ -610,6 +630,20 @@ window.PCShop={
     if(custs[3])custs[3].order=[{type:'pops',flavor:'bbq',done:0}];
     lost=0;syncLives();
     custs.forEach(function(c){c.enter=0;c.fromDoor=false;c.arrive=0});
+    mark();render();paint();
+  },
+  seedServe:function(){
+    if(!run)start();
+    plates=[null,null,null];
+    serves[0]={id:nextId(),type:'fries',flavor:'onion'};
+    serves[1]={id:nextId(),type:'loopy',flavor:'cheese'};
+    serves[2]={id:nextId(),type:'pops',flavor:'chili'};
+    if(fryers[0]){fryers[0].food='fries';fryers[0].t=2.4;fryers[0].state='cook';}
+    if(fryers[1]){fryers[1].food='loopy';fryers[1].t=1.8;fryers[1].state='cook';}
+    if(fryers[2]){fryers[2].food='pops';fryers[2].t=1.2;fryers[2].state='cook';}
+    while(custs.length<4)spawnCust(true);
+    custs.forEach(function(c){c.enter=0;c.fromDoor=false;c.arrive=0});
+    lost=0;syncLives();
     mark();render();paint();
   },
   plateReady:function(){
