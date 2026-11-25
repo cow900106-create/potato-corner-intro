@@ -6,7 +6,7 @@ var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('
 var elScore=d.getElementById('score'),elDist=d.getElementById('dist'),elBest=d.getElementById('best');
 var KEY='pcGameRunBest',KEYD='pcGameRunBestDist';
 var W=0,H=0,dpr=1,focal=1,horizon=0,camH=1.8;
-var LANE=1.22,NEAR=5.6,FAR=72;
+var LANE=1.22,NEAR=8.2,FAR=78;
 var run=false,crashing=false,crashT=0,last=0,raf=0,camZ=0,speed=0,dist=0,score=0,coins=0,pops=[];
 var best=G.getBest(KEY),bestDist=G.getBest(KEYD);
 elBest.textContent=best;elDist.textContent=0;
@@ -22,9 +22,8 @@ var IM={
   bbq:img('img/bbq.png'),
   cheese:img('img/cheese.png'),
   chili:img('img/chili.png'),
-  limited:img('img/limited.png')
 };
-var FLAVS=['onion','bbq','cheese','chili','limited'];
+var FLAVS=['onion','bbq','cheese','chili'];
 function img(src){var i=new Image();i.src=src;return i}
 function ready(im){return im&&im.complete&&im.naturalWidth>0}
 function setScore(n){score=Math.max(0,n);elScore.textContent=score}
@@ -37,9 +36,9 @@ function size(){
   cv.width=W*dpr;cv.height=H*dpr;
   cv.style.width=W+'px';cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
-  horizon=H*0.33;
-  focal=W*1.7;
-  camH=(H*0.83-horizon)*NEAR/focal;
+  horizon=H*0.34;
+  focal=W*1.55;
+  camH=(H*0.86-horizon)*NEAR/focal;
   draw();
 }
 
@@ -173,16 +172,17 @@ function place(z,lane,kind){
 
 /* hit profiles: low/mid jumpable, tall must lane-change, arch must roll */
 function profile(kind){
-  if(kind==='loopy')return {shape:'low',h:0.62,w:0.98};
-  if(kind==='pops')return {shape:'low',h:0.95,w:1.0};
-  if(kind==='drink')return {shape:'tall',h:2.15,w:0.82};
-  if(kind==='fries')return {shape:'arch',h:2.15,w:1.16,gap:0.88};
-  return {shape:'low',h:0.7,w:0.9};
+  if(kind==='loopy')return {shape:'low',h:0.72,w:1.12};
+  if(kind==='pops')return {shape:'low',h:1.05,w:1.14};
+  if(kind==='drink')return {shape:'tall',h:2.45,w:1.02};
+  if(kind==='fries')return {shape:'arch',h:2.5,w:1.22,gap:0.58};
+  return {shape:'low',h:0.8,w:1.0};
 }
 
 function playerBox(){
-  var h=player.state==='roll'?0.62:1.52;
-  return {x:player.x,w:0.48,y:player.y,h:h,z:camZ+NEAR};
+  var body=LANE/3;
+  var h=player.state==='roll'?body*0.5:body*1.05;
+  return {x:player.x,w:body*0.72,y:player.y,h:h,z:camZ+NEAR};
 }
 
 function collide(o){
@@ -190,7 +190,7 @@ function collide(o){
   var rel=o.z-pb.z;
   if(rel>0.55||rel<-0.45)return false;
   var ox=laneX(o.lane);
-  if(Math.abs(ox-pb.x)>0.62)return false;
+  if(Math.abs(ox-pb.x)>LANE*0.48)return false;
   if(o.typ==='coin'){
     var cy=o._above?0.95:0.4;
     if(o._above&&player.y<0.25)return false;
@@ -342,8 +342,23 @@ function drawImg(im,x,y,w,h){
 }
 
 function drawShadow(x,y,s,rx){
-  ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#000';
-  ctx.beginPath();ctx.ellipse(x,y,s*(rx||0.42),s*0.12,0,0,6.2832);ctx.fill();ctx.restore();
+  ctx.save();ctx.globalAlpha=0.34;ctx.fillStyle='#000';
+  ctx.beginPath();ctx.ellipse(x,y+s*0.02,s*(rx||0.5),s*0.16,0,0,6.2832);ctx.fill();ctx.restore();
+}
+
+/* simple extruded box for a pseudo-3D look, no 3D engine */
+function drawPrism(cx,yG,w,h,s,front,side,top,im){
+  var depth=Math.max(7,s*0.32),skew=(cx<W/2?1:-1)*depth*0.8,lift=depth*0.55;
+  var x0=cx-w/2,x1=cx+w/2,y0=yG-h,y1=yG;
+  ctx.fillStyle=top;
+  ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y0);ctx.lineTo(x1+skew,y0-lift);ctx.lineTo(x0+skew,y0-lift);ctx.closePath();ctx.fill();
+  ctx.fillStyle=side;
+  if(skew>0){ctx.beginPath();ctx.moveTo(x1,y0);ctx.lineTo(x1+skew,y0-lift);ctx.lineTo(x1+skew,y1-lift);ctx.lineTo(x1,y1);ctx.closePath();ctx.fill();}
+  else{ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x0+skew,y0-lift);ctx.lineTo(x0+skew,y1-lift);ctx.lineTo(x0,y1);ctx.closePath();ctx.fill();}
+  ctx.fillStyle=front;
+  if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x0,y0,w,h,Math.min(10,w*0.08));ctx.fill();}
+  else ctx.fillRect(x0,y0,w,h);
+  if(im)drawImg(im,x0+w*0.07,y0+h*0.06,w*0.86,h*0.88);
 }
 
 function drawObj(o){
@@ -363,26 +378,25 @@ function drawObj(o){
   }
   var pr=profile(o.kind);
   var gnd=proj(lx,0,rel);
-  drawShadow(gnd.x,gnd.y,gnd.s,pr.w*0.55);
+  drawShadow(gnd.x,gnd.y,gnd.s,pr.w*0.62);
   if(pr.shape==='arch'){
     var top=proj(lx,pr.h,rel),gap=proj(lx,pr.gap,rel);
-    var half=pr.w*0.5*gnd.s,pw=Math.max(6,0.2*gnd.s);
+    var half=pr.w*0.5*gnd.s,pw=Math.max(8,0.24*gnd.s);
     var yTop=top.y,yGap=gap.y,yG=gnd.y,x=gnd.x;
-    ctx.fillStyle='#0b612e';
-    ctx.fillRect(x-half,yTop,pw,yG-yTop);
-    ctx.fillRect(x+half-pw,yTop,pw,yG-yTop);
-    ctx.fillStyle='#fce404';
-    ctx.fillRect(x-half,yTop,half*2,yGap-yTop);
-    ctx.fillStyle='#148c44';
-    ctx.fillRect(x-half,yGap-Math.max(4,0.08*gnd.s),half*2,Math.max(4,0.08*gnd.s));
-    var fw=half*1.7,fh=fw*0.72;
-    drawImg(IM.fries,x-fw/2,yTop-fh*0.55,fw,fh);
+    var beamH=Math.max(10,yGap-yTop);
+    drawPrism(x-half+pw/2,yG,pw,yG-yTop,gnd.s,'#0b612e','#06361a','#148c44',null);
+    drawPrism(x+half-pw/2,yG,pw,yG-yTop,gnd.s,'#0b612e','#06361a','#148c44',null);
+    drawPrism(x,yGap,half*2,beamH,gnd.s,'#fce404','#c9a600','#fff6bf',null);
+    var fw=half*1.7,fh=fw*0.7;
+    drawImg(IM.fries,x-fw/2,yTop-fh*0.62,fw,fh);
   }else{
-    var h=pr.h*gnd.s*1.12,w=pr.w*gnd.s*1.12;
-    var im=IM[o.kind];
-    // tall drinks stretch a bit
-    if(o.kind==='drink'){h=pr.h*gnd.s;w=pr.w*gnd.s}
-    drawImg(im,gnd.x-w/2,gnd.y-h,w,h);
+    var h=pr.h*gnd.s,w=pr.w*gnd.s;
+    var pal={
+      loopy:['#fff6bf','#c9a600','#fce404'],
+      pops:['#ffe0b0','#b56b1b','#ffd27a'],
+      drink:['#148c44','#0b612e','#fce404']
+    }[o.kind]||['#fff6bf','#8a6a10','#fce404'];
+    drawPrism(gnd.x,gnd.y,w,h,gnd.s,pal[0],pal[1],pal[2],IM[o.kind]);
   }
   ctx.restore();
 }
@@ -392,23 +406,24 @@ function drawPlayer(){
   var feet=proj(player.x,player.y,rel);
   var phase=camZ*2.4;
   var onGround=player.y<=0.02&&player.state!=='roll';
-  var bounce=onGround&&player.state==='run'?(Math.sin(phase)*0.5+0.5)*0.1:0;
+  var bounce=onGround&&player.state==='run'?(Math.sin(phase)*0.5+0.5)*0.05:0;
   var wobble=onGround&&player.state==='run'?Math.sin(phase)*0.11:0;
   var sx=1,sy=1,rot=player.tilt+wobble;
   if(player.state==='jump'){
-    if(player.vy>0){sx=0.9;sy=1.18;rot=player.tilt-0.2}
+    if(player.vy>0){sx=0.9;sy=1.16;rot=player.tilt-0.2}
     else{sx=0.96;sy=1.06;rot=player.tilt+0.12}
   }else if(player.state==='roll'){
     var u=1-player.rollT/0.52;
     rot=player.tilt+u*Math.PI*2;
-    sx=1.28;sy=0.42;
+    sx=1.12;sy=0.48;
   }else if(player.landT>0){
     var k=player.landT/0.16;
-    sy=1-0.18*k;sx=1+0.1*k;
+    sy=1-0.16*k;sx=1+0.08*k;
   }
-  if(crashing){rot=player.tilt;sy=0.85;sx=1.1}
-  var ch=1.55*(feet.s);
-  var cw=ch*(ready(IM.mascot)?IM.mascot.naturalWidth/IM.mascot.naturalHeight:0.95);
+  if(crashing){rot=player.tilt;sy=0.85;sx=1.08}
+  var aspect=ready(IM.mascot)?IM.mascot.naturalWidth/IM.mascot.naturalHeight:0.95;
+  var cw=(LANE*feet.s)/3;
+  var ch=cw/aspect;
   var gnd=proj(player.x,0,rel);
   drawShadow(gnd.x,gnd.y,gnd.s*(player.state==='roll'?0.7:1),0.5);
   ctx.save();
