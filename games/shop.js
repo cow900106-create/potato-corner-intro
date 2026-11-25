@@ -80,10 +80,10 @@ function resetLevel(keepMoney){
 
 function buildStations(){
   elRaws.innerHTML=FOODS.map(function(k){
-    return '<button class="st raw" data-food="'+k+'" type="button">'+icon(FOOD[k].bin)+'<span>'+FOOD[k].name+'</span></button>';
+    return '<button class="cell st raw" data-food="'+k+'" type="button">'+icon(FOOD[k].bin)+'<span>'+FOOD[k].name+'</span></button>';
   }).join('');
   elFlavs.innerHTML=FLAVS.map(function(k){
-    return '<button class="st flav" data-flav="'+k+'" type="button">'+icon(FLAV[k].img)+'<span>'+FLAV[k].name+'</span></button>';
+    return '<button class="cell st flav" data-flav="'+k+'" type="button">'+icon(FLAV[k].img)+'<span>'+({onion:'洋蔥',bbq:'BBQ',cheese:'起司',chili:'香辣'}[k]||FLAV[k].name)+'</span></button>';
   }).join('');
   [].forEach.call(elRaws.querySelectorAll('.raw'),function(btn){
     btn.addEventListener('click',function(){startFry(btn.getAttribute('data-food'))});
@@ -260,7 +260,8 @@ function spawnCust(instant){
   mark();
 }
 
-function seatLeft(slot){return (slot+0.5)*(100/SEATS)}
+function seatLeft(slot){return 50}
+function seatTop(slot){return 34+(slot+0.5)*(62/SEATS)}
 
 function update(dt){
   var cfg=L();
@@ -320,7 +321,7 @@ function render(){
     if(!c)continue;
     var leaving=c.leave==='gone'?' leaving':(c.leave==='ok'?' happy-leave':'');
     var entering=c.fromDoor?' entering':'';
-    html+='<button class="cust'+leaving+entering+'" data-slot="'+s+'" type="button" style="left:'+seatLeft(s)+'%">';
+    html+='<button class="cust'+leaving+entering+'" data-slot="'+s+'" type="button" style="left:50%;top:'+seatTop(s)+'%">';
     if(c.arrive<=0 && !c.fromDoor){
       html+='<div class="bubble">';
       c.order.forEach(function(o){
@@ -353,14 +354,14 @@ function render(){
   function slotHtml(it,kind,i,lab){
     var busy=it&&it.shaking>0?' busy':'';
     var hold=it?('<div class="hold">'+itemHtml(it,it.id===sel?'picked':'')+(it.shaking>0?'':'')+'</div>'):'';
-    return '<button class="slot '+kind+busy+'" data-kind="'+kind+'" data-i="'+i+'" type="button"><img class="dish" src="'+IMG+'plate.webp" alt="" draggable="false">'+hold+'<span class="plab">'+lab+'</span></button>';
+    return '<button class="cell slot '+kind+busy+'" data-kind="'+kind+'" data-i="'+i+'" type="button"><img class="dish" src="'+IMG+'plate-round.webp" alt="" draggable="false">'+hold+'<span class="plab">'+lab+'</span></button>';
   }
   elPlates.innerHTML=plates.map(function(it,i){
-    var lab=!it?'待調味':(it.shaking>0?'調味中':(it.flavor?'好了':'選風味粉'));
+    var lab=!it?'待調味':(it.shaking>0?'調味中':(it.flavor?'好了':'選粉'));
     return slotHtml(it,'plate',i,lab);
   }).join('');
   elServes.innerHTML=serves.map(function(it,i){
-    return slotHtml(it,'serve',i,it?'出餐':'出餐盤');
+    return slotHtml(it,'serve',i,it?'出餐':'');
   }).join('');
   [].forEach.call((elPlates&&elPlates.querySelectorAll('.item'))||[],function(el){
     bindItem(el,+el.getAttribute('data-id'));
@@ -371,13 +372,13 @@ function render(){
 
   elFryers.innerHTML=fryers.map(function(f,i){
     var st=f.state;
-    var lab=st==='empty'?'空鍋':(st==='cook'?'油炸中':(st==='ready'?'好了，點到盤子':(st==='burnt'?'焦了，點掉':'')));
+    var lab=st==='empty'?'空':(st==='cook'?'油炸中':(st==='ready'?'好了':(st==='burnt'?'焦了':'')));
     var pct=0;
     if(st==='cook')pct=Math.min(100,(f.t/cfg.cook)*100);
     else if(st==='ready'||st==='burnt')pct=100;
-    var src=st==='burnt'?IMG+'fryer-burnt.webp':((st==='cook'||st==='ready')?IMG+'fryer-cook.webp':IMG+'fryer-empty.webp');
+    var src=st==='burnt'?IMG+'fryer-wide-burnt.webp':((st==='cook'||st==='ready')?IMG+'fryer-wide-cook.webp':IMG+'fryer-wide-empty.webp');
     var food=(f.food&&st!=='empty')?'<img class="food-in" src="'+FOOD[f.food].img+'" alt="" draggable="false">':'';
-    return '<button class="fryer '+st+'" data-i="'+i+'" type="button"><span class="ring" style="--p:'+pct+'"></span><span class="bubbles"><i></i><i></i><i></i></span><img class="art" src="'+src+'" alt="" draggable="false">'+food+'<span class="plab">'+lab+'</span></button>';
+    return '<button class="cell fryer '+st+'" data-i="'+i+'" type="button"><span class="ring" style="--p:'+pct+'"></span><img class="art" src="'+src+'" alt="" draggable="false">'+food+'<span class="plab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elFryers.querySelectorAll('.fryer'),function(btn){
     btn.addEventListener('click',function(){tapFryer(+btn.getAttribute('data-i'))});
@@ -385,9 +386,9 @@ function render(){
 
   elDrinks.innerHTML=drinks.map(function(m,i){
     var fillPct=m.t<0?0:Math.min(1,m.t/cfg.drink);
-    var lab=m.cup?'點杯子':(m.t>=0?'裝杯中':'飲料機');
+    var lab=m.cup?'點杯':(m.t>=0?'裝杯中':'');
     var cup=m.cup?'<img class="cup-out item'+(m.cup.id===sel?' picked':'')+'" data-id="'+m.cup.id+'" src="'+FOOD.drink.img+'" alt="" draggable="false">':'';
-    return '<button class="prop drink-eq'+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button"><img class="art" src="'+IMG+'drink-machine.webp" alt="" draggable="false"><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'<span class="plab">'+lab+'</span></button>';
+    return '<button class="cell drink-eq'+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button"><img class="art" src="'+IMG+'drink-wide.webp" alt="" draggable="false"><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'<span class="plab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elDrinks.querySelectorAll('.drink-eq'),function(btn){
     btn.addEventListener('click',function(){takeDrink(+btn.getAttribute('data-i'))});

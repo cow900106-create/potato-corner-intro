@@ -30,7 +30,6 @@ var IM={
   pops:img('img/run/obs-pops.webp'),
   drink:img('img/run/obs-drink.webp'),
   train:img('img/run/obs-train.webp'),
-  gate:img('img/run/gate.webp'),
   bldgA:img('img/run/building-a.webp'),
   bldgB:img('img/run/building-b.webp')
 };
@@ -680,28 +679,9 @@ function draw(){
   var list=objs.slice().sort(function(a,b){return b.z-a.z});
   var pz=camZ+NEAR;
   var drawnP=false;
-  var z0=Math.floor((camZ-2)/ARCH_GAP)*ARCH_GAP;
-  var gates=[];
-  for(var gz=z0;gz<camZ+FAR+ARCH_GAP;gz+=ARCH_GAP){
-    if(gz>camZ+1)gates.push(gz);
-  }
-  var gi=0;
-  // far to near: gates and objects interleaved by z
-  function nextGate(){return gi<gates.length?gates[gates.length-1-gi]:null}
-  // gates stored ascending; draw descending
-  gates.sort(function(a,b){return b-a});
-  gi=0;
   for(var i=0;i<list.length;i++){
-    while(gi<gates.length&&gates[gi]>list[i].z){
-      if(!drawnP&&gates[gi]<pz){drawPlayer();drawnP=true}
-      drawGate(gates[gi]);gi++;
-    }
     if(!drawnP&&list[i].z<pz){drawPlayer();drawnP=true}
     drawObj(list[i]);
-  }
-  while(gi<gates.length){
-    if(!drawnP&&gates[gi]<pz){drawPlayer();drawnP=true}
-    drawGate(gates[gi]);gi++;
   }
   if(!drawnP)drawPlayer();
   pops.forEach(function(p){
