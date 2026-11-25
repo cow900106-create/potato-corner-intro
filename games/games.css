@@ -101,98 +101,105 @@ body.play.runpage .overlay{padding:18px 16px;padding-top:calc(52px + env(safe-ar
 .how span{flex:none;min-width:28px;color:var(--y)}
 body.play.runpage .overlay .fine{flex:none;margin:10px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 
-/* shop manager v6 — stainless counter on the right, street on the left */
+/* shop manager v7 — landscape counter, vertical columns, near-large far-small */
 html.shoppage{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none}
 body.play.shoppage{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;background:#14633a;-webkit-user-select:none;user-select:none}
 body.play.shoppage .stagewrap{position:absolute;inset:0;width:100%;height:100%;max-width:none;margin:0;border-radius:0;box-shadow:none;align-self:auto;background:#14633a;overflow:hidden}
-.shop-stage{position:absolute;inset:0;display:flex;flex-direction:row;overflow:hidden;color:var(--ink);background:#1a7a42}
-.shop-hudcol{flex:0 0 48px;width:48px;display:flex;flex-direction:column;align-items:stretch;gap:5px;padding:6px 4px;padding-top:calc(8px + env(safe-area-inset-top,0px));padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#0b4e28,#148c44 60%,#0b612e);z-index:8;box-shadow:3px 0 8px rgba(0,0,0,.25)}
-.shop-hudcol[hidden]{display:flex!important;visibility:hidden;pointer-events:none}
-body.play.shoppage.playing .shop-hudcol[hidden]{display:flex!important;visibility:visible;pointer-events:auto}
-.hud-pause{appearance:none;border:0;background:rgba(0,0,0,.35);color:#fff;font-weight:800;font-size:11px;border-radius:9px;padding:7px 3px;cursor:pointer;font-family:inherit;line-height:1.2}
+.shop-stage{position:absolute;inset:0;overflow:hidden;color:var(--ink);background:#1a7a42}
+
+/* top-centered HUD, pause at top-right */
+.shop-tophud{position:absolute;left:0;right:0;top:0;z-index:30;height:36px;display:flex;align-items:center;justify-content:space-between;padding:4px 8px;padding-top:calc(4px + env(safe-area-inset-top,0px));pointer-events:none;box-sizing:content-box}
+.shop-tophud > *{pointer-events:auto}
+.shop-tophud[hidden]{display:flex!important;visibility:hidden;pointer-events:none}
+body.play.shoppage.playing .shop-tophud[hidden]{display:flex!important;visibility:visible;pointer-events:none}
+body.play.shoppage.playing .shop-tophud[hidden] > *{pointer-events:auto}
+.shopback{color:#fff;text-decoration:none;font-weight:700;font-size:12px;padding:5px 10px;border-radius:99px;background:rgba(0,0,0,.38);z-index:2}
+.hud-pause{appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;border-radius:99px;padding:5px 10px;cursor:pointer;font-family:inherit;z-index:2}
 .hud-pause[hidden]{display:none}
 body.play.shoppage.playing .hud-pause{display:block}
-.hud-stat{display:flex;flex-direction:column;align-items:center;text-align:center;font-size:9px;font-weight:800;color:rgba(255,255,255,.92);line-height:1.15;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-.hud-stat b{display:block;color:#fce404;font-size:12px;font-weight:900;margin-top:1px;white-space:nowrap}
-.shopback{margin-top:auto;color:#fff;text-decoration:none;font-weight:700;font-size:11px;text-align:center;padding:6px 3px;border-radius:99px;background:rgba(0,0,0,.36)}
-.shop-main{flex:1;min-width:0;min-height:0;display:flex;flex-direction:row;position:relative}
+.hud-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;background:rgba(8,50,22,.72);border-radius:99px;padding:4px 14px 4px 12px;box-shadow:0 2px 0 rgba(0,0,0,.25);color:#fff;font-size:11px;font-weight:800;white-space:nowrap;pointer-events:none}
+.hud-center b{color:#fce404;font-weight:900}
+.hud-coin{display:flex;align-items:center;gap:6px}
+.goalbar{display:inline-block;width:72px;height:8px;background:rgba(255,255,255,.25);border-radius:99px;overflow:hidden;vertical-align:middle}
+.goalbar i,.goalbar #goalFill{display:block;height:100%;width:0;background:linear-gradient(90deg,#fce404,#fff6bf);border-radius:99px;transition:width .2s}
+.goallab{font-size:10px;opacity:.95}
 
-/* left street / customer queue — ~24% of the main, full height */
-.shop-stage .plaza{position:absolute;left:0;top:0;bottom:0;width:28%;background:url("img/shop/plaza-tall.webp") center/cover no-repeat;pointer-events:none;z-index:0}
-.shop-stage .custs{position:relative;z-index:4;flex:0 0 28%;width:28%;min-width:0;min-height:0;padding:4px 2px;box-sizing:border-box;pointer-events:none}
-.shop-stage .cust{position:absolute;left:50%;top:50%;width:88%;max-width:120px;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:top .7s ease,transform .7s ease,opacity .35s;transform:translate(-50%,-50%);-webkit-tap-highlight-color:transparent}
-.shop-stage .cust.entering{top:8%!important;transform:translate(-50%,-50%) scale(.72);opacity:.85;z-index:1}
-.shop-stage .cust.leaving{opacity:0;transform:translate(-50%,-50%) translateX(-16px) scale(.9)}
-.shop-stage .cust.happy-leave{opacity:0;transform:translate(-50%,-50%) translateY(-18px) scale(.9)}
-.shop-stage .cust .bubble{background:#fff;border-radius:8px;padding:2px 3px;width:100%;max-width:76px;max-height:40px;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.16),0 3px 6px rgba(0,0,0,.12);display:flex;flex-wrap:wrap;gap:1px;justify-content:center;align-items:center;position:relative;box-sizing:border-box}
+/* upper ~40%: street / mall, customers in a row behind the counter */
+.shop-stage .plaza{position:absolute;left:0;right:0;top:0;height:42%;background:url("img/shop/plaza-wide.webp") center 30%/cover no-repeat;pointer-events:none;z-index:0}
+.shop-stage .custs{position:absolute;left:0;right:0;top:2%;height:40%;z-index:4;padding:0 8px;box-sizing:border-box;pointer-events:none}
+.shop-stage .cust{position:absolute;left:50%;bottom:4%;width:14%;max-width:92px;display:flex;flex-direction:column;align-items:center;gap:2px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent}
+.shop-stage .cust.entering{left:94%!important;transform:translateX(-50%) scale(.7);opacity:.8;z-index:1}
+.shop-stage .cust.leaving{opacity:0;transform:translateX(-50%) translateY(10px) scale(.9)}
+.shop-stage .cust.happy-leave{opacity:0;transform:translateX(-50%) translateY(-16px) scale(.9)}
+.shop-stage .cust .bubble{background:#fff;border-radius:8px;padding:2px 3px;width:100%;max-width:78px;max-height:36px;overflow:hidden;box-shadow:0 2px 0 rgba(0,0,0,.16),0 3px 6px rgba(0,0,0,.12);display:flex;flex-wrap:wrap;gap:1px;justify-content:center;align-items:center;position:relative;box-sizing:border-box}
 .shop-stage .cust .bubble:after{content:"";position:absolute;left:50%;bottom:-5px;margin-left:-4px;border:5px solid transparent;border-top-color:#fff;border-bottom-width:0}
 .shop-stage .cust .need{display:inline-flex;align-items:center;background:#fbf4e4;border-radius:5px;padding:1px}
 .shop-stage .cust .need img{width:16px;height:16px;object-fit:contain;display:block;max-width:none}
 .shop-stage .cust .need img.flav{width:11px;height:11px;margin-left:-4px}
 .shop-stage .cust .need.done{opacity:.32;filter:grayscale(.7)}
-.shop-stage .cust .pbar{width:70%;height:4px;background:rgba(255,255,255,.6);border-radius:99px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.2);flex:none}
+.shop-stage .cust .pbar{width:70%;height:4px;background:rgba(255,255,255,.55);border-radius:99px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.2);flex:none}
 .shop-stage .cust .pbar i{display:block;height:100%;border-radius:99px}
-.shop-stage .cust .body{width:58px;height:80px;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;display:block;max-width:none}
-.shop-stage .cust .fly-coin{position:absolute;width:22px;height:22px;left:50%;margin-left:-11px;top:26%;pointer-events:none;animation:coinfly .8s ease-out forwards;z-index:5;max-width:none}
+.shop-stage .cust .body{width:56px;height:78px;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;display:block;max-width:none}
+.shop-stage .cust .fly-coin{position:absolute;width:22px;height:22px;left:50%;margin-left:-11px;top:20%;pointer-events:none;animation:coinfly .8s ease-out forwards;z-index:5;max-width:none}
 @keyframes coinfly{0%{opacity:1;transform:translateY(0) scale(.8)}100%{opacity:0;transform:translateY(-48px) scale(1.15)}}
 
-/* right stainless counter: ~72% of the main (= ~70% of the screen), full height */
-.shop-stage .counter{position:relative;z-index:5;flex:1 1 auto;width:72%;min-width:0;min-height:0;display:flex;flex-direction:column}
-.shop-stage .counter-deck{flex:1;min-height:0;min-width:0;position:relative;display:grid;grid-template-rows:1.15fr 1fr 1fr 1.05fr 1.2fr;gap:4px;padding:8px 8px 8px 8px;background:url("img/shop/steel-counter.webp") center/cover no-repeat,#8a939a;box-shadow:inset 0 0 0 3px #b7c0c6,inset 0 0 0 7px #6e777e,0 0 14px rgba(0,0,0,.28);overflow:hidden}
-.shop-stage .row{min-height:0;min-width:0;height:100%;position:relative;overflow:hidden}
-.shop-stage .row-3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.shop-stage .row-ings{display:grid;grid-template-columns:1.25fr 1fr;gap:4px}
-.shop-stage .row-ings .bins,.shop-stage .row-ings .jars{display:grid;gap:4px;min-width:0;min-height:0;height:100%;overflow:hidden}
-.shop-stage .row-ings .bins{grid-template-columns:repeat(3,1fr)}
-.shop-stage .row-ings .jars{grid-template-columns:repeat(4,1fr)}
+/* lower ~60%: wood body + stainless worktop, 6 perspective columns */
+.shop-stage .counter{position:absolute;left:0;right:0;bottom:0;height:60%;z-index:5;background:url("img/shop/wood.webp") center/cover no-repeat,#8b5a2b;box-shadow:0 -8px 16px rgba(0,0,0,.28);padding:0;display:flex;flex-direction:column;perspective:920px;overflow:visible}
+.shop-stage .counter:after{content:"";flex:none;height:14px;background:linear-gradient(#6a3e1c,#4a2a12);box-shadow:0 -2px 0 rgba(255,255,255,.12),0 3px 6px rgba(0,0,0,.35)}
+.shop-stage .counter-deck{flex:1;min-height:0;min-width:0;position:relative;display:grid;grid-template-columns:1fr 1fr 1.05fr 1.15fr 1.15fr 1.2fr;gap:6px;padding:8px 12px 6px;margin:8px 16px 0;background:url("img/shop/steel-counter.webp") center/cover no-repeat,#8a939a;box-shadow:inset 0 0 0 3px #b7c0c6,inset 0 0 0 7px #6e777e,0 8px 14px rgba(0,0,0,.28);border-radius:8px 8px 0 0;overflow:visible;transform:rotateX(15deg);transform-origin:50% 100%;transform-style:preserve-3d}
 
-/* inset metal well — objects fill the well, almost no gap */
+.shop-stage .col{min-width:0;min-height:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;transform-origin:50% 100%}
+.shop-stage .col-3 > .cell{flex:none}
+/* near (bottom) large, far (top) small */
+.shop-stage .col-3 > .cell:nth-child(1){width:62%;height:24%;z-index:1;margin-bottom:-2px}
+.shop-stage .col-3 > .cell:nth-child(2){width:82%;height:30%;z-index:2;margin-bottom:-4px}
+.shop-stage .col-3 > .cell:nth-child(3){width:104%;height:42%;z-index:3}
+
+.shop-stage .col-jars{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1.15fr;gap:4px;align-content:end;padding-top:8%}
+.shop-stage .col-jars > .cell{width:100%;height:100%;min-height:0}
+.shop-stage .col-jars > .cell:nth-child(1),
+.shop-stage .col-jars > .cell:nth-child(2){transform:scale(.9);transform-origin:center bottom}
+.shop-stage .col-fryers{background:linear-gradient(180deg,rgba(70,78,86,.35),rgba(30,36,42,.2));border-radius:6px;padding:3px}
+
 .shop-stage .cell,
 .shop-stage .fryer,
 .shop-stage .slot,
-.shop-stage .bins .st,
-.shop-stage .jars .st,
+.shop-stage .st,
 .shop-stage .drink-eq{
-  position:relative;min-width:0;min-height:0;height:100%;width:100%;
+  position:relative;min-width:0;min-height:0;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:0;margin:0;border:0;cursor:pointer;font:inherit;color:#fff;
-  background:linear-gradient(180deg,rgba(30,36,42,.22),rgba(12,16,20,.42));
-  box-shadow:inset 0 2px 5px rgba(0,0,0,.55),inset 0 -1px 0 rgba(255,255,255,.2),0 1px 0 rgba(255,255,255,.14);
+  background:linear-gradient(180deg,rgba(30,36,42,.2),rgba(12,16,20,.4));
+  box-shadow:inset 0 2px 5px rgba(0,0,0,.5),inset 0 -1px 0 rgba(255,255,255,.18),0 1px 0 rgba(255,255,255,.12);
   border-radius:6px;
   -webkit-tap-highlight-color:transparent;
   overflow:hidden;
 }
-.shop-stage .cell:active,
-.shop-stage .fryer:active,
-.shop-stage .slot:active,
-.shop-stage .bins .st:active,
-.shop-stage .jars .st:active,
-.shop-stage .drink-eq:active{filter:brightness(1.06)}
+.shop-stage .cell:active,.shop-stage .fryer:active,.shop-stage .slot:active,.shop-stage .st:active,.shop-stage .drink-eq:active{filter:brightness(1.06)}
 
 .shop-stage .fryer .art,
 .shop-stage .slot .dish,
 .shop-stage .drink-eq .art,
 .shop-stage .bins .st img,
-.shop-stage .jars .st img{
+.shop-stage .st img,
+.shop-stage .jars .st img,
+.shop-stage .col img.art,
+.shop-stage .col img.dish,
+.shop-stage .raw img,
+.shop-stage .flav img{
   display:block;pointer-events:none;user-select:none;
   max-width:none;max-height:none;
   width:100%;height:100%;
-  object-fit:cover;
+  object-fit:contain;
   filter:drop-shadow(0 2px 3px rgba(0,0,0,.35));
 }
-/* jars and bins keep their silhouette */
-.shop-stage .bins .st img,
-.shop-stage .jars .st img,
-.shop-stage .drink-eq .art{
-  object-fit:contain;
-  width:96%;height:92%;
-}
 .shop-stage .fryer .art{object-fit:cover;width:104%;height:104%}
-.shop-stage .slot .dish{object-fit:contain;width:100%;height:100%}
+.shop-stage .slot .dish{object-fit:fill;width:100%;height:100%}
+.shop-stage .drink-eq .art{object-fit:contain;width:100%;height:100%}
+.shop-stage .raw img,.shop-stage .flav img{width:92%;height:86%;object-fit:contain}
 
-/* fried food sitting in the oil */
 .shop-stage .fryer .food-in{
-  position:absolute;left:50%;top:50%;width:62%;height:62%;
+  position:absolute;left:50%;top:50%;width:58%;height:58%;
   transform:translate(-50%,-54%);margin:0;
   object-fit:contain;pointer-events:none;z-index:2;
   filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));
@@ -202,80 +209,60 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .fryer.ready{box-shadow:inset 0 0 0 3px #fce404,inset 0 2px 5px rgba(0,0,0,.45)}
 .shop-stage .fryer.cook{box-shadow:inset 0 0 0 3px rgba(252,228,4,.75),inset 0 2px 5px rgba(0,0,0,.5)}
 .shop-stage .fryer.burnt{box-shadow:inset 0 0 0 3px #8a3a18,inset 0 2px 5px rgba(0,0,0,.55)}
-.shop-stage .fryer .ring{position:absolute;right:4px;top:4px;width:16px;height:16px;margin:0;border-radius:50%;background:conic-gradient(#fce404 calc(var(--p,0)*1%),rgba(255,255,255,.25) 0);-webkit-mask:radial-gradient(farthest-side,transparent 58%,#000 61%);mask:radial-gradient(farthest-side,transparent 58%,#000 61%);pointer-events:none;opacity:0;z-index:4}
+.shop-stage .fryer .ring{position:absolute;right:3px;top:3px;width:14px;height:14px;margin:0;border-radius:50%;background:conic-gradient(#fce404 calc(var(--p,0)*1%),rgba(255,255,255,.25) 0);-webkit-mask:radial-gradient(farthest-side,transparent 58%,#000 61%);mask:radial-gradient(farthest-side,transparent 58%,#000 61%);pointer-events:none;opacity:0;z-index:4}
 .shop-stage .fryer.cook .ring,.shop-stage .fryer.ready .ring,.shop-stage .fryer.burnt .ring{opacity:1}
 .shop-stage .fryer.ready .ring{background:conic-gradient(#148c44 100%,#148c44 0)}
 .shop-stage .fryer.burnt .ring{background:conic-gradient(#5a2a14 100%,#5a2a14 0)}
 
-.shop-stage .slot .hold{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:2;width:70%;height:70%;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
+.shop-stage .slot .hold{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);z-index:2;width:72%;height:70%;display:flex;align-items:center;justify-content:center;pointer-events:none;overflow:hidden}
 .shop-stage .slot .hold .item{pointer-events:auto;width:100%;height:100%;border-width:2px;max-width:none;max-height:none}
 .shop-stage .slot .hold .item img{width:100%;height:100%;object-fit:contain;max-width:none;max-height:none}
 .shop-stage .slot .hold .item img.flav,
-.shop-stage .item img.flav{position:absolute;right:0;bottom:0;width:30%;height:30%;max-width:26px;max-height:26px;object-fit:contain;background:#fff;border-radius:50%;padding:1px;box-shadow:0 1px 0 rgba(0,0,0,.25);z-index:3}
+.shop-stage .item img.flav{position:absolute;right:0;bottom:0;width:30%;height:30%;max-width:24px;max-height:24px;object-fit:contain;background:#fff;border-radius:50%;padding:1px;box-shadow:0 1px 0 rgba(0,0,0,.25);z-index:3}
 .shop-stage .slot.busy .dish{animation:shakeplate .16s linear infinite}
 @keyframes shakeplate{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
 
 .shop-stage .item{position:relative;width:100%;height:100%;display:grid;place-items:center;flex:none;border:2px solid transparent;border-radius:10px;touch-action:none;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));overflow:hidden;min-width:0;min-height:0}
 .shop-stage .item img{width:100%;height:100%;object-fit:contain;pointer-events:none;max-width:none;max-height:none}
-.shop-stage .item img.flav{position:absolute;right:0;bottom:0;width:32%;height:32%;max-width:28px;max-height:28px;background:#fff;border-radius:50%;padding:1px;box-shadow:0 1px 0 rgba(0,0,0,.25)}
 .shop-stage .item.picked{border-color:#fce404;background:rgba(255,255,255,.18)}
 .shop-stage .item.burnt{filter:grayscale(.4) brightness(.7)}
 .shop-stage .item.ghost{position:fixed;z-index:60;pointer-events:none;opacity:.95;margin:0;width:56px;height:56px;overflow:visible}
 
 .shop-stage .drink-eq .drink-fill{position:absolute;left:22%;width:16%;bottom:22%;height:0;border-radius:2px;background:linear-gradient(#fff6bf,#fce404);pointer-events:none;z-index:2;opacity:.85}
-.shop-stage .drink-eq .cup-out{position:absolute;left:18%;bottom:4%;width:28%;height:52%;margin:0;object-fit:contain;z-index:3;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));pointer-events:auto;max-width:none}
+.shop-stage .drink-eq .cup-out{position:absolute;left:18%;bottom:4%;width:30%;height:48%;margin:0;object-fit:contain;z-index:3;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45));pointer-events:auto;max-width:none}
 .shop-stage .drink-eq.busy{filter:brightness(1.08)}
 
 .shop-stage .plab,
-.shop-stage .bins .st span,
-.shop-stage .jars .st span{
+.shop-stage .st span{
   position:absolute;left:0;right:0;bottom:0;z-index:5;
-  display:block;margin:0;padding:1px 3px;
-  font-size:8px;font-weight:800;letter-spacing:.01em;line-height:1.15;text-align:center;
+  display:block;margin:0;padding:1px 2px;
+  font-size:7px;font-weight:800;letter-spacing:.01em;line-height:1.15;text-align:center;
   color:#fff;text-shadow:0 1px 2px #000;
   background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.62));
   pointer-events:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
-.shop-stage .trash-eq{position:absolute;right:2px;bottom:2px;z-index:6;width:36px;height:40px;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.shop-stage .trash-eq{position:absolute;left:2px;bottom:2px;z-index:6;width:32px;height:36px;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .shop-stage .trash-eq .art{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));max-width:none}
 
-.shop-stage .toast{position:absolute;left:62%;top:18%;transform:translate(-50%,-16px);background:rgba(6,50,20,.92);color:var(--y);font-weight:800;padding:6px 14px;border-radius:99px;opacity:0;pointer-events:none;z-index:8;white-space:nowrap;font-size:13px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
+.shop-stage .toast{position:absolute;left:50%;top:18%;transform:translate(-50%,-16px);background:rgba(6,50,20,.92);color:var(--y);font-weight:800;padding:6px 14px;border-radius:99px;opacity:0;pointer-events:none;z-index:8;white-space:nowrap;font-size:13px;box-shadow:0 3px 0 rgba(0,0,0,.25)}
 .shop-stage .toast.on{opacity:1;transform:translate(-50%,0);transition:opacity .15s,transform .15s}
 .overlay.shopstart{background:linear-gradient(180deg,rgba(6,70,28,.5),rgba(6,50,22,.78)),url("img/start-bg.jpg") center/cover no-repeat;justify-content:flex-end}
 body.play.shoppage .overlay{padding:14px 16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 body.play.shoppage .overlay .fine{flex:none;margin:8px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 body.play.shoppage .how{max-width:min(520px,92%)}
 
-/* landscape: wide platters, slightly wider street so four guests fit */
-@media (orientation: landscape){
-  .shop-hudcol{flex-basis:50px;width:50px}
-  .shop-stage .plaza,.shop-stage .custs{width:24%;flex-basis:24%}
-  .shop-stage .cust{max-width:96px}
-  .shop-stage .cust .body{width:44px;height:60px}
-  .shop-stage .cust .bubble{max-width:68px;max-height:32px}
-  .shop-stage .slot .dish{object-fit:fill;width:102%;height:102%}
-  .shop-stage .slot .hold{width:78%;height:80%;top:46%}
-}
-
-/* portrait: kitchen ~70% of the short side, full height, horizontal rows */
+/* portrait: rotate the WHOLE landscape stage as one block — columns stay columns */
 @media (orientation: portrait){
-  .shop-hudcol{flex-basis:38px;width:38px}
-  .shop-stage .plaza,.shop-stage .custs{width:22%;flex-basis:22%}
-  .shop-stage .cust{max-width:92px}
-  .shop-stage .cust .body{width:50px;height:70px}
-  .shop-stage .plab,
-  .shop-stage .bins .st span{font-size:9px;padding:2px 3px}
-  .shop-stage .jars .st span{font-size:7px;padding:1px 0;letter-spacing:0}
-  .shop-stage .slot .dish{object-fit:contain;width:100%;height:78%;max-height:78%}
-  .shop-stage .slot .hold{width:90%;height:58%;top:44%}
-  .shop-stage .bins .st img,
-  .shop-stage .jars .st img,
-  .shop-stage .drink-eq .art{
-    object-fit:cover;width:108%;height:108%;
-  }
+html.shoppage,body.play.shoppage{width:100vw;height:100%;height:100dvh}
+body.play.shoppage .stagewrap{
+  width:100dvh;height:100dvw;max-width:none;
+  position:fixed;top:0;left:0;
+  transform:rotate(-90deg) translateX(-100%);
+  transform-origin:top left;
+  inset:auto;
 }
-
+}
 /* catch fries fullscreen shell — same chrome as runner */
 html.catchpage{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none}
 body.play.catchpage{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#0e5a2c;-webkit-user-select:none;user-select:none}

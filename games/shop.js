@@ -74,6 +74,7 @@ function resetLevel(keepMoney){
   elGoal.textContent='$'+cfg.goal;
   elMoney.textContent='$'+money;
   elTime.textContent=String(Math.ceil(timeLeft));
+  syncGoal();
   buildStations();
   render();
 }
@@ -239,9 +240,14 @@ function tapCust(slot){
   if(!serveTo(c,found.it,found.idx))toast('不是這份');
 }
 
+function syncGoal(){
+  var el=d.getElementById('goalFill'),g=L().goal;
+  if(el)el.style.width=Math.min(100,(levelMoney/g)*100)+'%';
+}
 function addMoney(n){
   money+=n;levelMoney+=n;
   elMoney.textContent='$'+money;
+  syncGoal();
 }
 
 function toast(m){toastMsg=m;toastT=1.15}
@@ -260,8 +266,7 @@ function spawnCust(instant){
   mark();
 }
 
-function seatLeft(slot){return 50}
-function seatTop(slot){return 34+(slot+0.5)*(62/SEATS)}
+function seatLeft(slot){return 14+(slot+0.5)*(72/SEATS)}
 
 function update(dt){
   var cfg=L();
@@ -321,7 +326,7 @@ function render(){
     if(!c)continue;
     var leaving=c.leave==='gone'?' leaving':(c.leave==='ok'?' happy-leave':'');
     var entering=c.fromDoor?' entering':'';
-    html+='<button class="cust'+leaving+entering+'" data-slot="'+s+'" type="button" style="left:50%;top:'+seatTop(s)+'%">';
+    html+='<button class="cust'+leaving+entering+'" data-slot="'+s+'" type="button" style="left:'+seatLeft(s)+'%">';
     if(c.arrive<=0 && !c.fromDoor){
       html+='<div class="bubble">';
       c.order.forEach(function(o){
@@ -478,6 +483,7 @@ function paint(){
     var fill=d.querySelector('.drink-eq[data-i="'+i+'"] .drink-fill');
     if(fill)fill.style.height=((m.t<0?0:Math.min(1,m.t/cfgP.drink))*22)+'px';
   });
+  syncGoal();
   var tip=d.getElementById('toast');
   if(tip){tip.textContent=toastMsg;tip.className='toast'+(toastT>0?' on':'')}
 }

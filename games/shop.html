@@ -6,57 +6,58 @@
 <meta name="theme-color" content="#148c44">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>薯條小店長｜薯條小遊戲（非官方）</title>
-<meta name="description" content="經營一間 Potato Corner 小店：下鍋、調味、做飲料，在客人離開前把餐點送對。非官方小遊戲。">
+<meta name="description" content="經營一間 Potato Corner 小店：下鍋、調味、做飲料，在客人離開前把餐點送對。請橫放手機遊玩。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=10">
+<link rel="stylesheet" href="games.css?v=12">
 </head>
 <body class="play shoppage">
 <div class="stagewrap" id="wrap">
 <div class="shop-stage" id="stage" aria-label="薯條小店長遊戲畫面">
-  <div class="shop-hudcol" id="hud">
-    <button class="hud-pause" id="pauseBtn" type="button" hidden>暫停</button>
-    <div class="hud-stat">金幣<b id="money">$0</b></div>
-    <div class="hud-stat">目標<b id="goal">$360</b></div>
-    <div class="hud-stat">時間<b id="time">90</b></div>
-    <div class="hud-stat">關卡<b id="lv">1/3</b></div>
+  <div class="shop-tophud" id="hud">
     <a class="shopback" href="index.html">選單</a>
-  </div>
-  <div class="shop-main">
-    <div class="plaza" aria-hidden="true"></div>
-    <div class="custs" id="custs"></div>
-    <div class="counter" id="counter">
-      <div class="counter-deck">
-        <div class="row row-3" id="fryers"></div>
-        <div class="row row-3" id="plates"></div>
-        <div class="row row-3" id="serves"></div>
-        <div class="row row-ings">
-          <div class="bins" id="raws"></div>
-          <div class="jars" id="flavs"></div>
-        </div>
-        <div class="row row-3" id="drinks"></div>
-        <button class="trash-eq" id="trashBtn" type="button" title="丟掉">
-          <img class="art" src="img/shop/trash.webp" alt="" draggable="false">
-        </button>
+    <div class="hud-center">
+      <div class="hud-coin">
+        <span>金幣 <b id="money">$0</b></span>
+        <span class="goalbar" aria-hidden="true"><i id="goalFill"></i></span>
+        <span class="goallab">目標 <b id="goal">$360</b></span>
       </div>
+      <div class="hud-time">時間 <b id="time">90</b></div>
+      <div class="hud-lv">關卡 <b id="lv">1/3</b></div>
+    </div>
+    <button class="hud-pause" id="pauseBtn" type="button" hidden>暫停</button>
+  </div>
+  <div class="plaza" aria-hidden="true"></div>
+  <div class="custs" id="custs"></div>
+  <div class="counter" id="counter">
+    <div class="counter-deck">
+      <div class="col col-3" id="drinks"></div>
+      <div class="col col-3" id="raws"></div>
+      <div class="col col-jars" id="flavs"></div>
+      <div class="col col-3" id="plates"></div>
+      <div class="col col-3" id="serves"></div>
+      <div class="col col-3 col-fryers" id="fryers"></div>
+      <button class="trash-eq" id="trashBtn" type="button" title="丟掉">
+        <img class="art" src="img/shop/trash.webp" alt="" draggable="false">
+      </button>
     </div>
   </div>
 </div>
 <div class="overlay shopstart" id="ov">
 <img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
 <p class="ovt" id="ovT">薯條小店長</p>
-<p class="ovs" id="ovS">一局 90 秒，共 3 關，營業額達到目標就過關。客人等太久會走掉，薯條炸太久會焦。</p>
+<p class="ovs" id="ovS">一局 90 秒，共 3 關，營業額達到目標就過關。請橫放手機遊玩。</p>
 <div class="how" id="how">
 <div><span>1</span> 點薯條、捲捲薯或雞米花下油鍋，可看見裡面在炸</div>
 <div><span>2</span> 炸好點到待調味盤，再選風味粉</div>
 <div><span>3</span> 點飲料機，杯子會出現在出口；點完成品會自動送給對的客人，也可以拖過去</div>
-<div><span>！</span> 組合餐要全部送對才算完成</div>
+<div><span>！</span> 組合餐要全部送對才算完成。直向請橫放手機</div>
 </div>
 <button class="btn" id="go" type="button">開始營業</button>
 <p class="fine" id="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
 </div>
 </div>
 <script src="games.js?v=2"></script>
-<script src="shop.js?v=6"></script>
+<script src="shop.js?v=7"></script>
 </body>
 </html>
