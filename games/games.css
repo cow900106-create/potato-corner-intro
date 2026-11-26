@@ -232,7 +232,21 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .slot .dish{object-fit:contain;width:90%;height:90%;z-index:1}
 .shop-stage .drink-eq .art{object-fit:cover;width:104%;height:104%;object-position:center 58%}
 .shop-stage .raw img{width:104%;height:104%;object-fit:cover;object-position:center 42%;position:relative;z-index:1}
-.shop-stage .flav img{width:108%;height:108%;object-fit:contain;position:relative;z-index:1}
+.shop-stage .flav img{width:100%;height:82%;object-fit:contain;object-position:center 18%;position:relative;z-index:1;margin-bottom:0}
+.shop-stage .flav .flav-lab{
+  display:block!important;
+  position:absolute;left:50%;bottom:3px;right:auto;top:auto;
+  transform:translateX(-50%);
+  z-index:6;margin:0;padding:2px 6px 2px;
+  font-size:9px;font-weight:900;letter-spacing:.02em;line-height:1.1;text-align:center;
+  color:#fff;
+  text-shadow:0 0 2px #000,0 1px 0 #000,0 -1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 1px 2px #000;
+  background:rgba(16,12,8,.9);
+  border-radius:99px;
+  pointer-events:none;white-space:nowrap;overflow:visible;text-overflow:clip;
+  box-shadow:0 1px 2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.2);
+  background-image:none;
+}
 .shop-stage .st span{display:none!important}
 .shop-stage #plates{background:linear-gradient(180deg,rgba(120,90,30,.22),rgba(40,30,12,.12));border-radius:6px;padding:3px}
 .shop-stage #serves{background:linear-gradient(180deg,rgba(20,120,50,.26),rgba(10,40,20,.12));border-radius:6px;padding:3px}

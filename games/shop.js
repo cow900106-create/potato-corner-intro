@@ -362,7 +362,7 @@ function buildStations(){
   }).join('');
   elFlavs.innerHTML=FLAVS.map(function(k){
     var lab=({onion:'洋蔥',bbq:'BBQ',cheese:'起司',chili:'香辣'}[k]||FLAV[k].name);
-    return '<button class="cell st flav flav-'+k+'" data-flav="'+k+'" type="button" aria-label="'+lab+'">'+icon(FLAV[k].img)+'</button>';
+    return '<button class="cell st flav flav-'+k+'" data-flav="'+k+'" type="button" aria-label="'+lab+'">'+icon(FLAV[k].img)+'<span class="flav-lab">'+lab+'</span></button>';
   }).join('');
   [].forEach.call(elRaws.querySelectorAll('.raw'),function(btn){
     btn.addEventListener('click',function(){startFry(btn.getAttribute('data-food'))});
