@@ -523,15 +523,19 @@ body.play.questpage .qpads[hidden]{display:none!important}
 @keyframes qskillpop{0%{transform:scale(.8)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
 .qbtn-skill.ready{animation:qskillpulse .85s ease-in-out infinite;border-color:#fce404;background:rgba(120,40,170,.8);color:#fce404}
 .qbtn-skill.pop{animation:qskillpop .22s ease-out}
-body.play.questpage .overlay{padding:10px 16px;padding-top:calc(44px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));overflow:auto;justify-content:flex-end}
-body.play.questpage .overlay .ovt{font-size:24px}
-body.play.questpage .overlay .ovs{font-size:15px}
-body.play.questpage .overlay .big{font-size:32px}
-body.play.questpage .overlay .rec{max-width:min(380px,72vw);padding:8px 10px}
+body.play.questpage .overlay{padding:8px 14px;padding-top:calc(32px + env(safe-area-inset-top,0px));padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));overflow-x:hidden;overflow-y:auto;justify-content:center;gap:5px}
+body.play.questpage .overlay .ovlogo{height:28px;padding:3px 8px;margin:0}
+body.play.questpage .overlay .ovlogo[hidden]{display:none!important}
+body.play.questpage .overlay .ovt{font-size:20px;flex:none}
+body.play.questpage .overlay .ovs{font-size:13px;line-height:1.4;max-width:38em;flex:none}
+body.play.questpage .overlay .big{font-size:28px}
+body.play.questpage .overlay .rec{flex:none;max-width:min(380px,72vw);padding:8px 10px}
 body.play.questpage .overlay .rec img{width:52px;height:52px}
-body.play.questpage .overlay .btn{padding:8px 22px;font-size:16px;box-shadow:0 3px 0 #c9a600}
-body.play.questpage .overlay .fine{flex:none;margin:6px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
-body.play.questpage .how{max-width:min(560px,94%)}
+body.play.questpage .overlay .btn{flex:none;padding:8px 22px;font-size:16px;box-shadow:0 3px 0 #c9a600}
+body.play.questpage .overlay .fine{flex:none;margin:4px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
+body.play.questpage .how{max-width:min(560px,94%);flex:1 1 auto;min-height:0;max-height:48%;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;font-size:12px;line-height:1.4;padding:8px 12px}
+body.play.questpage .how div{margin:3px 0}
+body.play.questpage .quest-best{flex:none}
 .overlay.queststart{background:linear-gradient(180deg,rgba(6,70,28,.28),rgba(6,50,22,.82)),url("img/quest/sky.webp") center/cover no-repeat}
 .quest-best{margin:0;font-weight:800;color:#fce404;font-size:14px;min-height:1em}
 @media (orientation: portrait){
