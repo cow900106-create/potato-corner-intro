@@ -36,7 +36,7 @@ var MUTE_KEY='pc-quest-mute', BEST_KEY='pc-quest-best';
 var W=844, H=390, DPR=1, GROUND=302, WORLD_W=2200;
 var GRAV=1950, JUMP_V=-640, MOVE=280, ACCEL=2200, FRICTION=2000, COYOTE=0.12;
 var SKILL_CD=5.5, SKILL_COST=22;
-var WEAPON_STAGE=10, BOOM_MAX=2, BOOM_RANGE=W*0.52, BOOM_SPD=680, BOOM_BACK=760;
+var WEAPON_LV=5, BOOM_MAX=2, BOOM_RANGE=W*0.52, BOOM_SPD=680, BOOM_BACK=760;
 var COMBOS=[
   {dur:0.26,hitAt:0.055,lunge:210,dmg:1.00,knock:260,launch:90,arc:86,heavy:0,stop:0.038},
   {dur:0.28,hitAt:0.055,lunge:240,dmg:1.18,knock:310,launch:120,arc:102,heavy:0,stop:0.046},
@@ -386,15 +386,16 @@ function levelUp(){
   sfxLevel();
   burst(player.x,player.y-80,'#fce404',22,240,true);
   burst(player.x,player.y-80,'#fff6bf',12,160,false);
+  checkWeaponUnlock();
 }
 
 /* ---------- weapons ---------- */
 function stageFreq(){return 1+(stage-1)*0.08}
 function stageShot(){return 1+(stage-1)*0.07}
 function checkWeaponUnlock(){
-  if(weaponUnlocked||stage<WEAPON_STAGE)return false;
+  if(weaponUnlocked||!player||player.lv<WEAPON_LV)return false;
   weaponUnlocked=true;
-  showBanner('第 10 關解鎖！薯條迴力鏢',2.8);
+  showBanner('LV.5 解鎖！薯條迴力鏢',2.8);
   unlockFx=2.6;
   sfxUnlock();
   if(player){
@@ -421,8 +422,8 @@ function updateWeapUI(just){
   }else{
     btnWeap.classList.add('locked');
     btnWeap.classList.remove('unlocked','just');
-    btnWeap.setAttribute('aria-label','第10關解鎖迴力鏢');
-    if(weapLock){weapLock.hidden=false;weapLock.textContent='第10關解鎖'}
+    btnWeap.setAttribute('aria-label','LV.5解鎖迴力鏢');
+    if(weapLock){weapLock.hidden=false;weapLock.textContent='LV.5解鎖'}
     if(weapIcon)weapIcon.src='img/quest/boom.webp';
   }
 }
@@ -430,7 +431,7 @@ function trySwitchWeap(){
   if(state!=='play'||!player||player.dead)return;
   if(!weaponUnlocked){
     sfxDeny();
-    if(!banner||bannerT<0.45)showBanner('第 10 關解鎖迴力鏢',0.9);
+    if(!banner||bannerT<0.45)showBanner('達到 LV.5 解鎖迴力鏢',0.9);
     if(btnWeap){
       btnWeap.classList.remove('nope');void btnWeap.offsetWidth;btnWeap.classList.add('nope');
       setTimeout(function(){if(btnWeap)btnWeap.classList.remove('nope')},260);
@@ -601,12 +602,11 @@ function killEnemy(e){
   if(e.kind==='boss'){
     stage++;
     phase='clear';
-    showBanner('第 '+stage+' 關',stage===WEAPON_STAGE?1.2:1.6);
+    showBanner('第 '+stage+' 關',1.6);
     setTimeout(function(){
       if(state!=='play')return;
       phase='mobs';
       waveMobs(stage);
-      checkWeaponUnlock();
     },1400);
   }
 }
