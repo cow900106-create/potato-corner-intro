@@ -5,7 +5,8 @@ var ov=d.getElementById('ov'), ovT=d.getElementById('ovT'), ovS=d.getElementById
 var ovLogo=d.getElementById('ovlogo'), how=d.getElementById('how'), fine=d.getElementById('fine');
 var go=d.getElementById('go'), hud=d.getElementById('hud');
 var elRank=d.getElementById('rank'), elLap=d.getElementById('lap'), elSpd=d.getElementById('spd');
-var itemBtn=d.getElementById('itemBtn'), itemIcon=d.getElementById('itemIcon'), itemLab=d.getElementById('itemLab');
+var itemBtn=d.getElementById('itemBtn'), itemIcon=d.getElementById('itemIcon'), itemIdle=d.getElementById('itemIdle');
+var btnL=d.getElementById('btnL'), btnR=d.getElementById('btnR'), controls=d.getElementById('controls');
 var muteBtn=d.getElementById('muteBtn'), bestLine=d.getElementById('bestLine');
 var dots={you:d.getElementById('dot-you'),cheese:d.getElementById('dot-cheese'),bbq:d.getElementById('dot-bbq'),chili:d.getElementById('dot-chili')};
 
@@ -35,14 +36,14 @@ var PLACE=['1st','2nd','3rd','4th'];
 var PLACE_ZH=['第 1 名','第 2 名','第 3 名','第 4 名'];
 
 var MUTE_KEY='pc-kart-mute', BEST_KEY='pc-kart-best';
-var SEG=200, CAM_D=0.84, CAM_H=1500, CAM_OFF=1440, ROAD_W=2000, DRAW=180, LAPS=3;
+var SEG=200, CAM_D=0.84, CAM_H=2200, CAM_OFF=1800, ROAD_W=2000, DRAW=180, LAPS=3;
 var MAX_SPD=3600, BOOST_SPD=5000, OFF_LIMIT=1400;
 var W=390,H=844,DPR=1,CX=195,CY=400;
 
 var segs=[], N=0, trackLen=0, SHOT_Z=0;
 var state='menu'; /* menu, count, racing, done */
 var racers=[], player=null, hazards=[], missiles=[], particles=[];
-var steer=0, holdL=0, holdR=0, keys={};
+var steer=0, holdL=0, holdR=0, padL=0, padR=0, keys={};
 var raceT=0, countT=0, skyOff=0, bounce=0, lastTs=0, raf=0;
 var camY=0, flash=0, goFlash=0, frozen=0;
 
@@ -289,7 +290,7 @@ function onKey(e,down){
 var ptrs={};
 function isUI(el){
   if(!el)return false;
-  return !!(el.closest&&(el.closest('.kartback')||el.closest('.kart-mute')||el.closest('.kart-item')||el.closest('.overlay')));
+  return !!(el.closest&&(el.closest('.kartback')||el.closest('.kart-mute')||el.closest('.kart-item')||el.closest('.kart-pad')||el.closest('.kbtn')||el.closest('.kart-controls')||el.closest('.overlay')));
 }
 function ptrSteer(x){
   if(x<W*0.5){holdL=1;holdR=0}else{holdR=1;holdL=0}
@@ -312,6 +313,31 @@ function onMove(e){
 function onUp(e){
   if(e.pointerId!=null)delete ptrs[e.pointerId];
   if(Object.keys(ptrs).length===0){holdL=0;holdR=0}
+  syncSteerBtns();
+}
+function syncSteerBtns(){
+  if(btnL)btnL.classList.toggle('on', !!(padL||holdL||keys.l));
+  if(btnR)btnR.classList.toggle('on', !!(padR||holdR||keys.r));
+}
+function bindPad(btn,side){
+  if(!btn)return;
+  function down(e){
+    unlockAudio();
+    if(side==='l')padL=1;else padR=1;
+    syncSteerBtns();
+    try{btn.setPointerCapture(e.pointerId)}catch(err){}
+    if(e.cancelable)e.preventDefault();
+    e.stopPropagation();
+  }
+  function up(e){
+    if(side==='l')padL=0;else padR=0;
+    syncSteerBtns();
+    if(e.cancelable)e.preventDefault();
+    e.stopPropagation();
+  }
+  bindLock(btn,'pointerdown',down);
+  btn.addEventListener('pointerup',up);
+  btn.addEventListener('pointercancel',up);
 }
 function preventPage(e){if(e.cancelable)e.preventDefault()}
 
@@ -379,11 +405,12 @@ function syncItemBtn(){
     itemBtn.classList.add('has');
     itemIcon.src=ITEM_ICON[player.item].src;
     itemIcon.alt=ITEM_NAME[player.item]||'';
-    itemLab.textContent=ITEM_NAME[player.item]||'道具';
+    itemBtn.setAttribute('aria-label','使用'+ (ITEM_NAME[player.item]||'道具'));
   }else{
     itemBtn.classList.remove('has');
     itemIcon.removeAttribute('src');
-    itemLab.textContent='道具';
+    itemIcon.alt='';
+    itemBtn.setAttribute('aria-label','使用道具');
   }
 }
 function hitOil(r,h){
@@ -429,9 +456,10 @@ function updateRacer(r,dt,isP){
 
   var st=0;
   if(isP){
-    st=(holdR||keys.r?1:0)-(holdL||keys.l?1:0);
+    st=(holdR||keys.r||padR?1:0)-(holdL||keys.l||padL?1:0);
     if(r.slipT>0)st+=Math.sin(raceT*18)*1.4;
     steer=steer*0.7+st*0.3;
+    syncSteerBtns();
     r.steer=steer;
   }else{
     var look=curveAhead(r.z+SEG*18,10);
@@ -552,8 +580,8 @@ function update(dt){
 
   camY+=(player.y+CAM_H-camY)*8*dt;
   skyOff+=player.speed*curveAhead(player.z,4)*dt*0.000085;
-  bounce=Math.sin(raceT*(10+player.speed/400))*Math.min(1,player.speed/MAX_SPD)*3;
-  if(player.boostT>0)bounce*=1.4;
+  bounce=Math.sin(raceT*(10+player.speed/400))*Math.min(1,player.speed/MAX_SPD)*1.4;
+  if(player.boostT>0)bounce*=1.15;
   flash=Math.max(0,flash-dt);
   goFlash=Math.max(0,goFlash-dt);
   tickEngine();
@@ -584,7 +612,7 @@ function size(){
   if(canvas.width!==Math.floor(w*DPR)||canvas.height!==Math.floor(h*DPR)){
     canvas.width=Math.floor(w*DPR);canvas.height=Math.floor(h*DPR);
   }
-  W=w;H=h;CX=W/2;CY=H*0.48;
+  W=w;H=h;CX=W/2;CY=H*0.38;
   ctx.setTransform(DPR,0,0,DPR,0,0);
 }
 function project(p,camX,camY0,relZ){
@@ -613,47 +641,56 @@ function lerpC(a,b,t){
   return 'rgb('+r+','+g+','+bl+')';
 }
 function drawSky(){
-  var g=ctx.createLinearGradient(0,0,0,CY+40);
-  g.addColorStop(0,'#3aa7ea');
-  g.addColorStop(0.55,'#7ed3f7');
-  g.addColorStop(1,'#d8f3ff');
+  var g=ctx.createLinearGradient(0,0,0,CY+8);
+  g.addColorStop(0,'#5eb4ef');
+  g.addColorStop(0.45,'#8fd0f8');
+  g.addColorStop(0.82,'#c9ebff');
+  g.addColorStop(1,'#e7f6ff');
   ctx.fillStyle=g;
   ctx.fillRect(0,0,W,H);
   /* sun */
-  var sx=CX+W*0.28+skyOff*0.15, sy=H*0.14;
-  var sg=ctx.createRadialGradient(sx,sy,4,sx,sy,H*0.16);
-  sg.addColorStop(0,'rgba(255,245,180,0.95)');
-  sg.addColorStop(1,'rgba(255,245,180,0)');
-  ctx.fillStyle=sg;ctx.fillRect(sx-H*0.16,sy-H*0.16,H*0.32,H*0.32);
-  /* clouds */
-  ctx.fillStyle='rgba(255,255,255,0.78)';
-  var c,i;
-  for(i=0;i<6;i++){
-    var cx=mod(W*0.2*i + i*90 - skyOff*28, W+180)-90;
-    var cy=H*0.08+(i%3)*H*0.05;
-    cloud(cx,cy,40+((i*13)%20));
+  var sx=CX+W*0.26+skyOff*0.1, sy=H*0.09;
+  var sg=ctx.createRadialGradient(sx,sy,3,sx,sy,H*0.11);
+  sg.addColorStop(0,'rgba(255,250,210,0.95)');
+  sg.addColorStop(0.45,'rgba(255,236,150,0.45)');
+  sg.addColorStop(1,'rgba(255,236,150,0)');
+  ctx.fillStyle=sg;ctx.fillRect(sx-H*0.11,sy-H*0.11,H*0.22,H*0.22);
+  /* soft clouds in the upper sky only */
+  var i;
+  for(i=0;i<5;i++){
+    var cx=mod(W*0.22*i + i*70 - skyOff*16, W+200)-80;
+    var cy=H*0.055+(i%3)*H*0.028;
+    cloud(cx,cy,28+((i*11)%16),0.72+(i%3)*0.08);
   }
-  /* far hills */
-  hillLayer(1.0,'#2e7d4f',0.22,0.8);
-  hillLayer(1.7,'#246844',0.30,1.15);
+  /* low, rounded, receding Q-style hills just above the horizon */
+  hillLayer(0.7,'#9ecfb3',0.070,0.9);
+  hillLayer(1.15,'#6fbe84',0.052,0.85);
+  hillLayer(1.7,'#3ea45d',0.038,0.7);
 }
-function cloud(x,y,s){
+function cloud(x,y,s,a){
+  ctx.fillStyle='rgba(255,255,255,'+(a==null?0.8:a)+')';
   ctx.beginPath();
-  ctx.arc(x,y,s*0.55,0,6.28);
-  ctx.arc(x+s*0.55,y-s*0.15,s*0.45,0,6.28);
-  ctx.arc(x+s,y,s*0.5,0,6.28);
+  ctx.arc(x,y,s*0.5,0,6.28);
+  ctx.arc(x+s*0.5,y-s*0.18,s*0.42,0,6.28);
+  ctx.arc(x+s*0.95,y,s*0.46,0,6.28);
+  ctx.arc(x+s*0.42,y+s*0.1,s*0.34,0,6.28);
   ctx.fill();
 }
-function hillLayer(par,col,base,amp){
+function hillHump(x,par,height){
+  var u=(x+skyOff*22*par)/W;
+  var h=0;
+  h+=Math.pow(Math.max(0,Math.cos((u*1.8+par*0.31)*Math.PI*2)),1.35)*0.72;
+  h+=Math.pow(Math.max(0,Math.cos((u*2.7+par*1.17)*Math.PI*2)),1.5)*0.46;
+  h+=Math.pow(Math.max(0,Math.sin((u*1.15+0.42)*Math.PI*2)),1.4)*0.38;
+  return (0.28+h)*height*H;
+}
+function hillLayer(par,col,height,amp){
   ctx.fillStyle=col;
   ctx.beginPath();
-  ctx.moveTo(0,CY+20);
+  ctx.moveTo(0,CY+6);
   var x;
-  for(x=0;x<=W;x+=8){
-    var n=Math.sin((x+skyOff*40*par)*0.012*par)*amp + Math.sin((x*0.03+skyOff*18*par))*amp*0.45;
-    ctx.lineTo(x, CY - H*base - n*H*0.06);
-  }
-  ctx.lineTo(W,CY+36);ctx.lineTo(0,CY+36);ctx.fill();
+  for(x=0;x<=W;x+=5)ctx.lineTo(x, CY - hillHump(x,par,height)*(amp||1));
+  ctx.lineTo(W,CY+8);ctx.lineTo(0,CY+8);ctx.fill();
 }
 
 function drawRoad(){
@@ -763,14 +800,17 @@ function drawWorldSprites(){
       sw=sp.w*sp.scale*uw*0.28;
       if(sp.kind==='arch')sw=uw*2.25;
       if(sp.kind==='boost')sw=uw*0.85;
-      if(sp.kind==='tree')sw=uw*0.72*sp.scale;
-      if(sp.kind==='cone')sw=uw*0.22;
-      if(sp.kind==='box')sw=uw*0.38;
+      if(sp.kind==='tree')sw=uw*0.52*sp.scale;
+      if(sp.kind==='cone')sw=uw*0.16;
+      if(sp.kind==='box')sw=uw*0.30;
+      /* keep boost/oil pads from filling the control bar at the bottom */
+      if((sp.kind==='boost'||sp.kind==='oil')&&rel<1200)continue;
       sh=spriteH(sp.kind,sw);
       sx=CX+scale*(sp.x*ROAD_W-player.x*ROAD_W)*CX;
       sy=CY-scale*(seg.y-camY)*CY+bounce;
       /* bob item boxes */
       if(sp.kind==='box'){sy-=sh*0.15+Math.sin(raceT*5+seg.i)*sh*0.08}
+      if(sy>H-96&&(sp.kind==='boost'||sp.kind==='oil'))continue;
       blit(imgOfKind(sp.kind),sx,sy,sw,sh,clip);
     }
     /* hazards on this seg */
@@ -814,11 +854,11 @@ function drawWorldSprites(){
 
 function drawKartAt(r,scale,roadY,clip,isP){
   var uw=unitW(scale);
-  var sw=uw*(isP?0.72:0.62);
+  var sw=uw*(isP?0.62:0.54);
   var sh=sw*0.96;
   var sx=CX+scale*(r.x*ROAD_W-player.x*ROAD_W)*CX;
   var sy=CY-scale*(roadY-camY)*CY+bounce;
-  if(isP)sx=CX+r.steer*W*0.02;
+  if(isP)sx=CX+r.steer*W*0.018;
   var im=r.im;
   if(isP){
     if(r.steer<-0.35)im=IM.playerL;
@@ -827,10 +867,13 @@ function drawKartAt(r,scale,roadY,clip,isP){
   }
   ctx.save();
   if(clip!=null&&clip<H&&!isP){ctx.beginPath();ctx.rect(0,0,W,clip);ctx.clip()}
-  ctx.translate(sx,sy-sh*0.08);
-  ctx.rotate(r.steer*0.20);
-  ctx.fillStyle='rgba(0,0,0,0.28)';
-  ctx.beginPath();ctx.ellipse(0,sh*0.40,sw*0.40,sh*0.10,0,0,6.28);ctx.fill();
+  /* contact point is the road at sy; wheels sit on a tight oval shadow */
+  ctx.translate(sx,sy);
+  ctx.rotate(r.steer*0.16);
+  ctx.fillStyle='rgba(0,0,0,0.30)';
+  ctx.beginPath();
+  ctx.ellipse(0,-sh*0.035,sw*0.34,sh*0.055,0,0,6.28);
+  ctx.fill();
   if(ready(im))ctx.drawImage(im,-sw/2,-sh,sw,sh);
   if(r.shieldT>0&&ready(IM.shield)){
     ctx.globalAlpha=0.55+Math.sin(raceT*8)*0.1;
@@ -842,17 +885,20 @@ function drawKartAt(r,scale,roadY,clip,isP){
 }
 
 function drawSpeedLines(){
-  var i,n=14;
+  /* only during boost, and only along the left and right edges */
+  var i,n=8;
   ctx.save();
-  ctx.strokeStyle='rgba(255,250,200,0.55)';
-  ctx.lineWidth=2;
+  ctx.lineCap='round';
   for(i=0;i<n;i++){
-    var x=(i/n)*W + (raceT*600+i*40)%40;
-    var y=H*0.35+(i%7)*H*0.08;
-    ctx.beginPath();
-    ctx.moveTo(x,y);
-    ctx.lineTo(x,y+18+player.speed*0.004);
-    ctx.stroke();
+    var t=(raceT*2.6+i*0.125)%1;
+    var y=H*0.28+t*(H*0.58);
+    var len=16+t*34;
+    var inset=10+t*16;
+    var a=0.12+t*0.4;
+    ctx.strokeStyle='rgba(255,252,230,'+a+')';
+    ctx.lineWidth=1.6+t*1.4;
+    ctx.beginPath();ctx.moveTo(inset,y);ctx.lineTo(inset+5,y+len);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(W-inset,y);ctx.lineTo(W-inset-5,y+len);ctx.stroke();
   }
   ctx.restore();
 }
@@ -933,6 +979,7 @@ function start(){
   state='count';
   ov.hidden=true;
   hud.hidden=false;
+  if(controls)controls.hidden=false;
   itemBtn.hidden=false;
   syncItemBtn();
   syncHud();
@@ -964,6 +1011,7 @@ function finishRace(){
   /* keep hud visible under? hide to show overlay clearly */
   hud.hidden=true;
   itemBtn.hidden=true;
+  if(controls)controls.hidden=true;
 }
 function backToIntro(){
   /* used if needed */
@@ -971,10 +1019,10 @@ function backToIntro(){
 
 function shotPlay(){
   unlockAudio();
-  setMuted(true);
   resetRace();
   ov.hidden=true;
   hud.hidden=false;
+  if(controls)controls.hidden=false;
   itemBtn.hidden=false;
   player.z=SHOT_Z;
   player.x=-0.06;
@@ -982,8 +1030,8 @@ function shotPlay(){
   player.speed=MAX_SPD*0.9;
   player.laps=1;
   player.item='turbo';
-  player.boostT=0.9;
-  player.steer=-0.2;
+  player.boostT=0;
+  player.steer=-0.15;
   racers[1].z=SHOT_Z+640;racers[1].x=0.40;racers[1].speed=MAX_SPD*0.82;racers[1].laps=1;racers[1].y=roadYAt(racers[1].z);
   racers[2].z=SHOT_Z+500;racers[2].x=-0.58;racers[2].speed=MAX_SPD*0.8;racers[2].laps=1;racers[2].y=roadYAt(racers[2].z);
   racers[3].z=SHOT_Z+1080;racers[3].x=0.08;racers[3].speed=MAX_SPD*0.88;racers[3].laps=1;racers[3].y=roadYAt(racers[3].z);
@@ -1007,15 +1055,18 @@ setMuteUI();
 size();
 window.addEventListener('resize',onResize);
 window.addEventListener('orientationchange',function(){setTimeout(onResize,180)});
-d.addEventListener('keydown',function(e){onKey(e,true)});
-d.addEventListener('keyup',function(e){onKey(e,false)});
+d.addEventListener('keydown',function(e){onKey(e,true);syncSteerBtns()});
+d.addEventListener('keyup',function(e){onKey(e,false);syncSteerBtns()});
 bindLock(canvas,'pointerdown',onDown);
 bindLock(canvas,'pointermove',onMove);
 d.addEventListener('pointerup',onUp);
 d.addEventListener('pointercancel',onUp);
 bindLock(d,'touchmove',preventPage);
+bindPad(btnL,'l');
+bindPad(btnR,'r');
 go.addEventListener('click',function(){unlockAudio();if(state==='done'||state==='menu')start()});
 itemBtn.addEventListener('click',function(e){e.stopPropagation();useItem(player)});
+itemBtn.addEventListener('pointerdown',function(e){e.stopPropagation();if(e.cancelable)e.preventDefault()});
 muteBtn.addEventListener('click',function(e){e.stopPropagation();unlockAudio();setMuted(!muted)});
 d.addEventListener('pointerdown',function first(){unlockAudio();d.removeEventListener('pointerdown',first,true)},true);
 

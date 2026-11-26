@@ -9,7 +9,7 @@
 <meta name="description" content="3 圈競速小遊戲。車子會自己加速，左右轉向、吃道具、踩加速帶，搶先衝線。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=20">
+<link rel="stylesheet" href="games.css?v=22">
 </head>
 <body class="play kartpage">
 <div class="stagewrap" id="wrap">
@@ -32,18 +32,32 @@
     <i class="kp kp-you" id="dot-you"></i>
   </div>
 </div>
-<button class="kart-item" id="itemBtn" type="button" hidden aria-label="使用道具">
-  <img id="itemIcon" alt="">
-  <span id="itemLab">道具</span>
-</button>
+<div class="kart-controls" id="controls" hidden>
+  <div class="kart-pad" id="pad">
+    <button class="kbtn kbtn-l" id="btnL" type="button" aria-label="左轉">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M41 12 L20 32 L41 52" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="kbtn kbtn-r" id="btnR" type="button" aria-label="右轉">
+      <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M23 12 L44 32 L23 52" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <button class="kart-item" id="itemBtn" type="button" aria-label="使用道具">
+    <img class="item-art" id="itemIcon" alt="">
+    <svg class="item-idle" id="itemIdle" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="4"/>
+      <path d="M24 25c0-5.2 3.8-9 8.4-9 4.4 0 8 3 8 7.2 0 3.4-1.8 5.2-5.2 7.6l-1.4 1.1v4.6" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="32" cy="47" r="2.6" fill="currentColor"/>
+    </svg>
+  </button>
+</div>
 <div class="overlay kartstart" id="ov">
 <img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
 <p class="ovt" id="ovT">土豆卡丁車</p>
 <p class="ovs" id="ovS">3 圈競速，先衝線就贏。車子會自己加速。</p>
 <div class="how" id="how">
-<div><span>↔</span> 按住左半邊或右半邊轉向，也可以左右拖曳。電腦用方向鍵或 A D</div>
+<div><span>↔</span> 按住左下角方向鍵轉向，也可以在畫面上左右拖曳。電腦用方向鍵或 A D</div>
 <div><span>⇢</span> 踩上綠色加速帶會衝刺，路旁問號箱可以拿到道具</div>
-<div><span>★</span> 右下角或空白鍵放道具：香辣渦輪、起司護盾、薯條油漬、追蹤辣椒彈</div>
+<div><span>★</span> 右下角道具鍵或空白鍵放道具：香辣渦輪、起司護盾、薯條油漬、追蹤辣椒彈</div>
 <div><span>！</span> 衝出跑道會減速。最佳成績只存在你的手機瀏覽器</div>
 </div>
 <p class="kart-best" id="bestLine"></p>
@@ -52,6 +66,6 @@
 </div>
 </div>
 <script src="games.js?v=2"></script>
-<script src="kart.js?v=1"></script>
+<script src="kart.js?v=2"></script>
 </body>
 </html>
