@@ -320,22 +320,27 @@ function segAt(z){return segs[segIndex(z)]}
 /* ---------- racers ---------- */
 function makeRacer(id,name,im,skill,hex){
   return {id:id,name:name,im:im,skill:skill,color:hex,x:0,z:0,y:0,speed:0,laps:0,item:null,itemDelay:0,
-    boostT:0,shieldT:0,slipT:0,stunT:0,finished:0,finishT:0,place:4,steer:0,lives:3,invulnT:0};
+    boostT:0,shieldT:0,slipT:0,stunT:0,bumpT:0,finished:0,finishT:0,place:4,steer:0,lives:3,invulnT:0};
 }
 function resetRace(){
   hazards=[];missiles=[];particles=[];
-  raceT=0;countT=3.15;flash=0;goFlash=0;steer=0;skyOff=0;bounce=0;hurtShake=0;padL=0;padR=0;keys={};
+  raceT=0;countT=1.5;flash=0;goFlash=0;steer=0;skyOff=0;bounce=0;hurtShake=0;padL=0;padR=0;keys={};
   var cheese=makeRacer('cheese','起司車手',IM.cheese,0.96,'#f5a623');
   var bbq=makeRacer('bbq','BBQ車手',IM.bbq,0.90,'#6b3b1f');
   var chili=makeRacer('chili','香辣車手',IM.chili,0.93,'#e04a1f');
   player=makeRacer('you','你',IM.player,1,'#fce404');
   player.lives=3;player.invulnT=0;
-  /* grid: front cheese & chili, mid bbq, player at the back */
-  cheese.z=780;cheese.x=-0.38;
-  chili.z=780;chili.x=0.38;
-  bbq.z=420;bbq.x=-0.18;
-  player.z=180;player.x=0.32;
+  /* grid sits far enough down the track that the camera (z - CAM_OFF) is already
+     on the road. Starting at z=180 left camZ negative, so the whole road was
+     projected a lap away and the opening looked like a frozen green field.
+     Player has a clear center-right lane, not stacked behind chili. */
+  var gridZ=CAM_OFF+280, roll=MAX_SPD*0.84;
+  cheese.z=gridZ+720;cheese.x=-0.52;cheese.speed=roll*cheese.skill;
+  chili.z=gridZ+720;chili.x=0.52;chili.speed=roll*chili.skill;
+  bbq.z=gridZ+380;bbq.x=-0.52;bbq.speed=roll*bbq.skill;
+  player.z=gridZ;player.x=0.12;player.speed=roll;
   racers=[player,cheese,bbq,chili];
+  var ri;for(ri=0;ri<racers.length;ri++)racers[ri].y=roadYAt(racers[ri].z);
   /* restore hidden boxes */
   for(var i=0;i<N;i++){
     var sp=segs[i].sprites,j;
@@ -424,8 +429,10 @@ function bump(a,b){
   if(Math.abs(dx)>0.30)return;
   var push=0.22-Math.abs(dx);
   if(dx>=0){a.x+=push*0.5;b.x-=push*0.5}else{a.x-=push*0.5;b.x+=push*0.5}
-  if(a.shieldT<=0){a.speed*=0.86;if(a===player){sfxHit();flash=0.12}}
-  if(b.shieldT<=0)b.speed*=0.86;
+  /* one speed hit per contact, not every frame — otherwise the pack pins you at ~19 km/h */
+  if((a.bumpT>0)&&(b.bumpT>0))return;
+  if(a.shieldT<=0&&a.bumpT<=0){a.speed*=0.86;a.bumpT=0.45;if(a===player){sfxHit();flash=0.12}}
+  if(b.shieldT<=0&&b.bumpT<=0){b.speed*=0.86;b.bumpT=0.45}
 }
 function giveItem(r){
   if(r.item)return;
@@ -553,6 +560,7 @@ function updateRacer(r,dt,isP){
   r.shieldT=Math.max(0,r.shieldT-dt);
   r.slipT=Math.max(0,r.slipT-dt);
   r.stunT=Math.max(0,r.stunT-dt);
+  r.bumpT=Math.max(0,(r.bumpT||0)-dt);
   if(isP)r.invulnT=Math.max(0,(r.invulnT||0)-dt);
 
   var cur=isP?curveNow(r.z):curveAhead(r.z,8);
@@ -654,17 +662,30 @@ function updateRacer(r,dt,isP){
   }
 }
 
+function rollStart(dt){
+  var i,r,roll=MAX_SPD*0.84;
+  for(i=0;i<racers.length;i++){
+    r=racers[i];
+    r.speed=roll*(r===player?1:r.skill);
+    r.z+=r.speed*dt;
+    r.y=roadYAt(r.z);
+  }
+}
 function update(dt){
   if(dt>0.05)dt=0.05;
   if(frozen){tickEngine();return}
   if(state==='count'){
+    var band=function(t){return t>1?3:t>0.5?2:t>0?1:0};
+    var last=band(countT);
     countT-=dt;
-    var last=Math.ceil(countT+dt), now=Math.ceil(countT);
+    var now=band(countT);
     if(now>=1&&now<last)sfxCount();
     if(countT<=0){state='racing';goFlash=0.55;sfxGo()}
-    /* still allow small creep during countdown? no, hold still but rev */
+    /* rolling start: the road already flows at launch speed during 3-2-1 */
+    rollStart(dt);
     tickEngine();
     camY+= (player.y+CAM_H-camY)*8*dt;
+    syncHud();
     return;
   }
   if(state!=='racing'&&state!=='done')return;
@@ -878,6 +899,12 @@ function worldSX(worldX,scale){
   /* camera is locked to the road center (camX = 0) */
   return CX+scale*(worldX*ROAD_W)*CX;
 }
+function relZ(segZ,camZ){
+  var r=segZ-camZ;
+  r-=Math.floor(r/trackLen)*trackLen;
+  if(r>trackLen-SEG*4)r-=trackLen;
+  return r;
+}
 function drawRoad(){
   var camZ=player.z-CAM_OFF;
   var base=segIndex(camZ);
@@ -886,9 +913,7 @@ function drawRoad(){
   /* project all in range */
   for(n=0;n<=DRAW;n++){
     seg=segs[(base+n)%N];
-    var looped=seg.i<base && n!==0;
-    var worldZ=seg.z+(looped?trackLen:0);
-    var rel=worldZ-camZ;
+    var rel=relZ(seg.z,camZ);
     seg.p1.wx=0;seg.p1.wy=seg.y;
     project(seg.p1,camX,camY,rel);
     if(n>0){
@@ -982,10 +1007,8 @@ function drawWorldSprites(){
   for(n=DRAW;n>=0;n--){
     seg=segs[(base+n)%N];
     clip=seg.clip||H;
-    var looped=seg.i<base && n!==0;
-    var worldZ=seg.z+(looped?trackLen:0);
-    rel=worldZ-camZ;
-    if(rel<1)continue;
+    rel=relZ(seg.z,camZ);
+    if(rel<1||rel>SEG*(DRAW+2))continue;
     scale=CAM_D/rel;
     /* segment sprites */
     var uw=unitW(scale);
@@ -1104,7 +1127,7 @@ function drawSpeedLines(){
 
 function drawCount(){
   if(state==='count'&&countT>0){
-    var n=Math.ceil(countT);
+    var n=countT>1?3:countT>0.5?2:countT>0?1:0;
     var txt=n>=1?String(n):'';
     if(txt){
       ctx.save();
@@ -1197,6 +1220,7 @@ function start(){
   syncHud();
   lastTs=0;
   camY=player.y+CAM_H;
+  sfxCount();
   if(!raf)raf=requestAnimationFrame(loop);
   setTimeout(function(){startEngine()},120);
 }
