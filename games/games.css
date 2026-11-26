@@ -530,3 +530,17 @@ body.play.questpage .stagewrap{
   inset:auto;
 }
 }
+
+.qbtn-weap{position:absolute;right:168px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:60px;height:60px;pointer-events:auto;display:flex;align-items:center;justify-content:center;overflow:visible;background:rgba(30,18,8,.62);z-index:37}
+.qbtn-weap .qweap-img{width:44px;height:44px;object-fit:contain;pointer-events:none;display:block;transform:rotate(-12deg)}
+.qbtn-weap.locked{opacity:.7}
+.qbtn-weap.locked .qweap-img{opacity:.42;filter:grayscale(.4) brightness(.9)}
+.qbtn-weap .qweap-lock{position:absolute;left:2px;right:2px;bottom:5px;font-size:8px;font-weight:900;line-height:1.1;text-align:center;color:#fff;text-shadow:0 1px 2px #000,0 0 3px #000;pointer-events:none}
+.qbtn-weap.unlocked .qweap-lock{display:none}
+.qbtn-weap.unlocked{opacity:1;border-color:#fce404;background:rgba(120,80,12,.78)}
+.qbtn-weap.unlocked .qweap-img{opacity:1;filter:none}
+.qbtn-weap.sword .qweap-img{transform:rotate(-35deg);width:46px;height:46px}
+@keyframes qweapjust{0%,100%{box-shadow:0 0 0 0 rgba(252,228,4,.7),0 4px 0 rgba(0,0,0,.28);transform:scale(1)}50%{box-shadow:0 0 0 10px rgba(252,228,4,0),0 0 16px #fce404;transform:scale(1.08)}}
+.qbtn-weap.just{animation:qweapjust .7s ease-in-out 3;border-color:#fce404}
+@keyframes qweapnope{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.qbtn-weap.nope{animation:qweapnope .22s ease-in-out}
