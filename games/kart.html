@@ -9,7 +9,7 @@
 <meta name="description" content="3 圈競速小遊戲。車子會自己加速，左右轉向、吃道具、踩加速帶，搶先衝線。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=24">
+<link rel="stylesheet" href="games.css?v=25">
 </head>
 <body class="play kartpage">
 <div class="stagewrap" id="wrap">
@@ -17,6 +17,9 @@
 <a class="kartback" href="index.html">選單</a>
 <button class="kart-mute" id="muteBtn" type="button" aria-pressed="false" aria-label="音效" title="音效">聲音</button>
 <div class="karthud" id="hud" hidden>
+  <div class="kh-hearts" id="kartHearts" aria-label="剩餘生命 3">
+    <i class="heart" aria-hidden="true"></i><i class="heart" aria-hidden="true"></i><i class="heart" aria-hidden="true"></i>
+  </div>
   <div class="kh-top">
     <div class="kh-rank" id="rank">4th</div>
     <div class="kh-meta">
@@ -51,21 +54,25 @@
   </button>
 </div>
 <div class="overlay kartstart" id="ov">
-<img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
+<div class="kart-hero">
 <p class="ovt" id="ovT">土豆卡丁車</p>
-<p class="ovs" id="ovS">3 圈競速，先衝線就贏。車子會自己加速。</p>
+<p class="ovs" id="ovS">3 圈競速，先衝線就贏。車子會自己加速，有 3 條命。</p>
+</div>
+<div class="kart-card">
 <div class="how" id="how">
-<div><span>↔</span> 按住左下角 ◀ ▶ 轉向，電腦用方向鍵或 A D。放開就停在那個位置，畫面上滑動不會轉彎</div>
+<div><span>↔</span> 按住左下角 ◀ ▶ 轉向，電腦用方向鍵或 A D。放開就停在那個位置</div>
 <div><span>⇢</span> 踩上綠色加速帶會衝刺，路旁問號箱可以拿到道具</div>
 <div><span>★</span> 右下角道具鍵或空白鍵放道具：香辣渦輪、起司護盾、薯條油漬、追蹤辣椒彈</div>
-<div><span>！</span> 車子會自己往前。過彎不會自己偏掉，要自己按方向鍵轉彎。開到路邊草地會減速。最佳成績只存在你的手機瀏覽器</div>
+<div><span>♥</span> 有 3 條命。撞到路障或被對手道具打中會扣 1 命，有起司護盾可擋一次</div>
 </div>
 <p class="kart-best" id="bestLine"></p>
 <button class="btn" id="go" type="button">開始比賽</button>
 <p class="fine" id="fine">這是非官方小遊戲，沒有兌換或獎品。</p>
 </div>
 </div>
+<div class="kart-hurt" id="hurtTip" hidden>−1 命</div>
+</div>
 <script src="games.js?v=3"></script>
-<script src="kart.js?v=4"></script>
+<script src="kart.js?v=5"></script>
 </body>
 </html>

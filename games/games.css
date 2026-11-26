@@ -420,14 +420,14 @@ body.play.catchpage .how{max-width:min(520px,92%)}
 
 /* potato kart — fullscreen racer */
 html.kartpage{height:100%;height:100dvh;width:100%;width:100dvw;overflow:hidden;overscroll-behavior:none;touch-action:none}
-body.play.kartpage{position:fixed;inset:0;width:100vw;width:100dvw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#148c44}
-body.play.kartpage .stagewrap{position:absolute;inset:0;width:100vw;width:100dvw;height:100%;height:100dvh;max-width:none;margin:0;border-radius:0;box-shadow:none;align-self:auto;background:#4ec3f5;overflow:hidden}
+body.play.kartpage{position:fixed;inset:0;width:100vw;width:100dvw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#8ec8ef}
+body.play.kartpage .stagewrap{position:absolute;inset:0;width:100vw;width:100dvw;height:100%;height:100dvh;max-width:none;margin:0;border-radius:0;box-shadow:none;align-self:auto;background:#8ec8ef;overflow:hidden}
 body.play.kartpage,body.play.kartpage .stagewrap,body.play.kartpage canvas#stage{touch-action:none;overscroll-behavior:none}
 body.play.kartpage canvas#stage{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;margin:0;border:0;border-radius:0}
 body.play.kartpage .kartback{position:absolute;z-index:40;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));color:#fff;text-decoration:none;font-weight:700;font-size:13px;line-height:1;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.36)}
 body.play.kartpage .kart-mute{position:absolute;z-index:40;top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;line-height:1;border-radius:99px;padding:7px 11px;cursor:pointer;font-family:inherit}
 body.play.kartpage .kart-mute[aria-pressed="true"]{background:rgba(80,20,20,.7);color:#fce404}
-body.play.kartpage .karthud{position:absolute;z-index:35;top:calc(8px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 72px;box-sizing:border-box;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.65)}
+body.play.kartpage .karthud{position:absolute;z-index:35;top:calc(8px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0 72px;box-sizing:border-box;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.65)}
 body.play.kartpage .karthud[hidden]{display:none!important}
 .kh-top{display:flex;flex-direction:column;align-items:center;gap:0}
 .kh-rank{font-size:clamp(28px,8vw,44px);font-weight:900;color:#fce404;line-height:1;letter-spacing:.02em}
@@ -458,10 +458,31 @@ body.play.kartpage .karthud[hidden]{display:none!important}
 .kart-item{width:66px;height:66px}
 .kart-pad{gap:10px}
 }
-.overlay.kartstart{background:linear-gradient(180deg,rgba(6,70,28,.42),rgba(6,50,22,.78)),url("img/start-bg.jpg") center/cover no-repeat;justify-content:flex-end}
-body.play.kartpage .overlay{padding:18px 16px;padding-top:calc(52px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-body.play.kartpage .overlay .fine{flex:none;margin:10px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 .kart-best{margin:0;font-weight:800;color:#fce404;font-size:14px;min-height:1em}
+
+.kh-hearts{display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(8,28,16,.48);border-radius:99px;padding:8px 13px 10px;overflow:visible;box-shadow:0 2px 0 rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.22)}
+.kh-hearts .heart{position:relative;width:20px;height:18px;display:inline-block;flex:none}
+.kh-hearts .heart:before,.kh-hearts .heart:after{content:"";position:absolute;top:0;width:11px;height:17px;background:#ff4d62;border-radius:11px 11px 0 0}
+.kh-hearts .heart:before{left:10px;transform:rotate(-45deg);transform-origin:0 100%}
+.kh-hearts .heart:after{left:10px;transform:rotate(45deg);transform-origin:100% 100%}
+.kh-hearts .heart.off:before,.kh-hearts .heart.off:after{background:rgba(255,255,255,.32)}
+.kh-hearts.hit{animation:khPulse .38s ease}
+@keyframes khPulse{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.kart-hurt{position:absolute;z-index:38;left:50%;top:26%;transform:translateX(-50%);font-weight:900;font-size:28px;color:#ff5a73;text-shadow:0 2px 0 rgba(0,0,0,.45),0 0 14px rgba(255,40,60,.55);pointer-events:none;font-family:inherit}
+.kart-hurt[hidden]{display:none!important}
+.kart-hurt.on{animation:hurtPop .85s ease}
+@keyframes hurtPop{0%{opacity:0;transform:translateX(-50%) translateY(10px) scale(.82)}18%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.12)}100%{opacity:0;transform:translateX(-50%) translateY(-22px) scale(1)}}
+.overlay.kartstart{background:linear-gradient(180deg,rgba(16,24,36,.06) 0%,rgba(16,24,36,.22) 42%,rgba(10,16,28,.58) 100%),url("img/kart/menu-cover.webp") center top / cover no-repeat;justify-content:space-between;gap:0}
+body.play.kartpage .overlay{padding:12px 16px;padding-top:calc(52px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));justify-content:space-between;gap:10px}
+body.play.kartpage .overlay .fine{flex:none;margin:4px 8px 0;font-size:11px;line-height:1.45;color:#e8f4ec;text-align:center;max-width:26em}
+.kart-hero{flex:none;text-align:center;padding:4px 8px 0}
+.kart-card{width:min(400px,94%);margin:0 auto;background:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(16px) saturate(1.25);backdrop-filter:blur(16px) saturate(1.25);border:1.5px solid rgba(255,255,255,.46);border-radius:22px;box-shadow:0 12px 32px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.45);padding:14px 14px 12px;display:flex;flex-direction:column;align-items:center;gap:7px;color:#fff;text-align:center;box-sizing:border-box}
+.overlay.kartstart .ovt{font-size:32px;font-weight:900;letter-spacing:.06em;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.55),0 0 18px rgba(0,0,0,.25)}
+.overlay.kartstart .ovs{color:#fff;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+.overlay.kartstart .how{max-width:none;width:100%;box-sizing:border-box;background:rgba(8,18,14,.42);border:1px solid rgba(255,255,255,.18);color:#f3fff6;padding:8px 12px;font-size:13px;line-height:1.45}
+.overlay.kartstart .kart-best{color:#fce404;text-shadow:0 1px 4px rgba(0,0,0,.4)}
+.overlay.kartstart .btn{margin-top:1px;font-size:18px;padding:11px 28px}
+.overlay.kartstart .rec{max-width:100%;width:100%;box-sizing:border-box}
 
 /* potato quest — landscape MapleStory-like side scroller */
 html.questpage{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none}
