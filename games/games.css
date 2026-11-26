@@ -462,6 +462,10 @@ body.play.questpage .qpads[hidden]{display:none!important}
 .qbtn-skill{width:58px;height:58px;font-size:13px;background:rgba(80,30,120,.55);position:relative;overflow:hidden}
 .qbtn-skill.cd{opacity:.7}
 .qbtn-skill .qcd{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(252,228,4,.45);pointer-events:none}
+@keyframes qskillpulse{0%,100%{box-shadow:0 0 0 0 rgba(252,228,4,.6),0 0 8px rgba(252,228,4,.35);transform:scale(1)}50%{box-shadow:0 0 0 9px rgba(252,228,4,0),0 0 18px 3px rgba(252,228,4,.85);transform:scale(1.1)}}
+@keyframes qskillpop{0%{transform:scale(.8)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
+.qbtn-skill.ready{animation:qskillpulse .85s ease-in-out infinite;border-color:#fce404;background:rgba(120,40,170,.8);color:#fce404}
+.qbtn-skill.pop{animation:qskillpop .22s ease-out}
 body.play.questpage .overlay{padding:10px 16px;padding-top:calc(44px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));overflow:auto;justify-content:flex-end}
 body.play.questpage .overlay .ovt{font-size:24px}
 body.play.questpage .overlay .ovs{font-size:15px}
