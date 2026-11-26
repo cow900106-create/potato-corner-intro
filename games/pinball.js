@@ -11,7 +11,7 @@ var pads=d.getElementById('pads'),btnL=d.getElementById('btnL'),btnR=d.getElemen
 var KEY='pcGamePinballBest';
 var W=0,H=0,dpr=1,run=false,frozen=false,over=false,score=0,best=G.getBest(KEY);
 var last=0,raf=0,mult=1,ballsLeft=3,combo=0,comboT=0,goldFlash=0,shake=0,chargeTick=0;
-var power=0,gateClosed=false,stillT=0,serveT=0,fadeBall=0;
+var power=0,gateClosed=false,stillT=0,serveT=0,fadeBall=0,lastLaunch=0;
 var heldL=0,heldR=0,heldS=0,prevL=0,prevR=0;
 var pointers={},keys={l:0,r:0,s:0};
 var ball=null,parts=[],floats=[],lights=[];
@@ -29,7 +29,7 @@ var IM={
 function ready(im){return im&&im.complete&&im.naturalWidth>0}
 for(var _k in IM){IM[_k].addEventListener('load',function(){if(!run)draw()})}
 
-var SUB=10,GRAV=1850,MAXV=2100,STILL=22;
+var SUB=10,GRAV=1850,MAXV=2800,STILL=22,MIN_POWER=0.72,LAUNCH_GAP=280;
 
 function sfx(name,opts){if(G.audio)G.audio.play(name,opts||{})}
 function setScore(n){score=Math.max(0,n|0);if(elScore)elScore.textContent=score}
@@ -328,12 +328,19 @@ function collideFlippers(b,dt){
       var cx=e.ax+abx*t,cy=e.ay+aby*t;
       var rx=cx-f.px,ry=cy-f.py;
       var fovx=-f.omega*ry,fovy=f.omega*rx;
-      return resolveCapsule(b,e.ax,e.ay,e.bx,e.by,f.rad,0.28,0,fovx,fovy);
+      return resolveCapsule(b,e.ax,e.ay,e.bx,e.by,f.rad,0.52,0,fovx,fovy);
     }();
-    if(hit&&Math.abs(f.omega)>6){
-      /* extra pop when the paddle is swinging into the ball */
-      var punch=Math.min(420,Math.abs(f.omega)*18);
-      if(hit.vn<0){b.vx+=hit.nx*punch*0.15;b.vy+=hit.ny*punch*0.15}
+    if(hit){
+      var tip=0.4+0.6*(hit.t==null?0.7:hit.t);
+      if(Math.abs(f.omega)>4){
+        /* swinging flipper: strong upward pop, more at the tip */
+        var punch=Math.min(820,Math.abs(f.omega)*32)*tip;
+        b.vy-=punch*0.9;
+        b.vx+=(f.side<0?1:-1)*punch*0.32;
+      }else if((i===0?heldL:heldR)&&Math.abs(f.ang-f.up)<0.2){
+        /* held-up rubber still has some bounce */
+        if(hit.vn<0)b.vy-=90*tip;
+      }
     }
   }
 }
@@ -441,8 +448,8 @@ function stepFlippers(dt){
     f.prev=f.ang;
     target=(i===0?(heldL?f.up:f.rest):(heldR?f.up:f.rest));
     var diff=target-f.ang;
-    /* rise fast, fall a bit slower */
-    maxSpd=( (i===0?heldL:heldR) ? 22 : 16);
+    /* rise snappy, fall a bit slower */
+    maxSpd=( (i===0?heldL:heldR) ? 34 : 18);
     var step=Math.max(-maxSpd*dt,Math.min(maxSpd*dt,diff));
     f.ang+=step;
     /* snap if close */
@@ -451,19 +458,34 @@ function stepFlippers(dt){
   }
 }
 
+function minLaunchSpeed(){
+  /* always enough to crest the arch and drop into the playfield */
+  var from=ball?ball.y:(T.bot||720);
+  var peak=(T.cy&&T.arcR)?(T.cy-T.arcR):(T.top||60);
+  var h=Math.max(180,from-peak+140);
+  return Math.sqrt(2*GRAV*h)+420;
+}
+
 function firePlunger(){
-  if(!ball||!ball.alive||ball.mode!=='lane'||over){power=0;return}
-  var p=Math.max(0.2,Math.min(1,power||0.2));
-  ball.vy=-(1180+p*820);
-  ball.vx=-40-p*20;
+  if(!ball||!ball.alive||ball.mode!=='lane'||over){power=0;return false}
+  var p=Math.max(MIN_POWER,Math.min(1,power||MIN_POWER));
+  var need=minLaunchSpeed();
+  ball.vy=-(need+(p-MIN_POWER)/(1-MIN_POWER)*560);
+  ball.vx=-28-p*22;
+  /* nudge off the exact lane center so the arch peels the ball left */
+  if(T.laneL&&ball.x>(T.laneL+T.R)/2+1)ball.x=(T.laneL+T.R)/2-2;
   power=0;
+  lastLaunch=performance.now();
   sfx('launch');
   spawnBurst(ball.x,ball.y+ball.r,'#fff6bf',8,120);
+  return true;
 }
 
 function tryLaunch(){
-  if(!run||over||frozen)return;
-  if(ball&&ball.mode==='lane')firePlunger();
+  if(!run||over||frozen)return false;
+  if(performance.now()-lastLaunch<LAUNCH_GAP)return false;
+  if(ball&&ball.mode==='lane')return firePlunger();
+  return false;
 }
 
 function loseBall(){
@@ -545,7 +567,8 @@ function physics(dt){
   var n=SUB,h=dt/n,i,j,b,sp;
   stepFlippers(dt);
   if(heldS&&ball&&ball.mode==='lane'&&!over){
-    power=Math.min(1,power+dt/0.8);
+    if(power<MIN_POWER)power=MIN_POWER;
+    power=Math.min(1,power+dt/0.7);
     chargeTick-=dt;
     if(chargeTick<=0){sfx('plunger',{power:power});chargeTick=0.09}
   }else if(!heldS){
@@ -586,7 +609,7 @@ function physics(dt){
       /* contain */
       if(b.x<T.L+b.r-2){b.x=T.L+b.r;if(b.vx<0)b.vx*=-0.4}
       if(b.x>T.R-b.r+2){b.x=T.R-b.r;if(b.vx>0)b.vx*=-0.4}
-      if(b.y<T.top-10){b.y=T.top-10;if(b.vy<0)b.vy*=-0.3}
+      if(b.y<T.top-16){b.y=T.top-16;if(b.vy<0)b.vy*=-0.05}
       /* enter playfield */
       if(b.mode==='lane'&&b.x<T.laneL-b.r*0.85&&b.y<railY+30){
         b.mode='play';gateClosed=true;
@@ -1010,29 +1033,80 @@ function kindFromPoint(x,y,target){
   return x<mid?'L':'R';
 }
 
+function holdStart(id,kind){
+  if(!kind)return;
+  pointers[id]=kind;
+  if(kind==='S'&&ball&&ball.mode==='lane'){
+    /* a tap already has enough power to clear the arch; hold only adds punch */
+    if(power<MIN_POWER)power=MIN_POWER;
+  }
+  syncHeld();
+}
+function holdEnd(id,doLaunch){
+  var k=pointers[id];
+  if(!k)return;
+  delete pointers[id];
+  syncHeld();
+  if(doLaunch&&k==='S'&&!heldS)tryLaunch();
+}
+
 function onDown(e){
   if(!run||over)return;
   var kind=kindFromPoint(e.clientX,e.clientY,e.target);
   if(!kind)return;
   if(e.cancelable)e.preventDefault();
-  pointers[e.pointerId]=kind;
+  holdStart('p'+e.pointerId,kind);
   try{if(e.target&&e.target.setPointerCapture)e.target.setPointerCapture(e.pointerId)}catch(err){}
-  syncHeld();
 }
 function onUp(e){
-  var k=pointers[e.pointerId];
-  if(!k)return;
-  delete pointers[e.pointerId];
-  syncHeld();
-  if(k==='S'&&!heldS)tryLaunch();
+  holdEnd('p'+e.pointerId,true);
+}
+function onCancel(e){
+  /* iPhone Safari often fires pointercancel mid-press; do not drop the shot.
+     Launch after a tick if no pointer/touch is still holding the plunger. */
+  holdEnd('p'+e.pointerId,false);
+  if(!heldS){
+    setTimeout(function(){if(!heldS)tryLaunch()},40);
+  }
+}
+
+function touchPos(tr){return {x:tr.clientX,y:tr.clientY,target:document.elementFromPoint(tr.clientX,tr.clientY)||cv}}
+function onTouchStart(e){
+  if(!run||over)return;
+  var i,tr,k,pos;
+  for(i=0;i<e.changedTouches.length;i++){
+    tr=e.changedTouches[i];
+    pos=touchPos(tr);
+    k=kindFromPoint(pos.x,pos.y,pos.target||e.target);
+    if(!k)continue;
+    holdStart('t'+tr.identifier,k);
+  }
+  if(e.cancelable)e.preventDefault();
+}
+function onTouchEnd(e){
+  var i,tr;
+  for(i=0;i<e.changedTouches.length;i++){
+    tr=e.changedTouches[i];
+    holdEnd('t'+tr.identifier,true);
+  }
+  if(e.cancelable)e.preventDefault();
 }
 
 [cv,btnL,btnR,btnShoot].forEach(function(el){
   if(!el)return;
   el.addEventListener('pointerdown',onDown,{passive:false});
+  el.addEventListener('touchstart',onTouchStart,{passive:false});
+  el.addEventListener('touchend',onTouchEnd,{passive:false});
+  el.addEventListener('touchcancel',onTouchEnd,{passive:false});
 });
 window.addEventListener('pointerup',onUp);
-window.addEventListener('pointercancel',onUp);
+window.addEventListener('pointercancel',onCancel);
+if(btnShoot){
+  btnShoot.addEventListener('click',function(e){
+    if(e&&e.preventDefault)e.preventDefault();
+    if(!heldS)tryLaunch();
+  });
+}
 
 d.addEventListener('keydown',function(e){
   if(e.code==='ArrowLeft'||e.code==='KeyA'){keys.l=1;syncHeld();if(e.preventDefault)e.preventDefault()}
