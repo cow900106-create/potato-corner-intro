@@ -208,26 +208,27 @@ function kindW(k){
 }
 function buildTrack(){
   segs=[];
+  /* v6: a straight, wide track — no lateral curves, gentle hills only */
   addRoad(28,0,0);
-  addRoad(24,4.6,0);
+  addRoad(24,0,0);
   addRoad(12,0,0);
   addRoad(18,0,700);
-  addRoad(22,-5.4,1100);
+  addRoad(22,0,1100);
   addRoad(10,0,1100);
-  addRoad(20,-2,200);
-  addRoad(16,6.2,-100);
+  addRoad(20,0,200);
+  addRoad(16,0,-100);
   addRoad(14,0,0);
   addRoad(12,0,0);
-  addRoad(28,3.6,400);
+  addRoad(28,0,400);
   addRoad(16,0,200);
   addRoad(10,0,200);
-  addRoad(18,-5.5,500);
-  addRoad(14,-1,0);
+  addRoad(18,0,500);
+  addRoad(14,0,0);
   addRoad(12,0,0);
-  addRoad(20,2.4,-200);
-  addRoad(24,-3.2,300);
+  addRoad(20,0,-200);
+  addRoad(24,0,300);
   addRoad(16,0,0);
-  addRoad(18,4.2,0);
+  addRoad(18,0,0);
   addRoad(20,0,0);
   N=segs.length;
   trackLen=N*SEG;
@@ -240,10 +241,8 @@ function buildTrack(){
     if(i%11===5)spr(i,'tree',(2.05+((i)%5)*0.12),1.2);
   }
   for(i=20;i<N-8;i+=14){
-    if(Math.abs(segs[i].curve)>2){
-      spr(i,'cone',-1.18,1);
-      spr(i+1,'cone',1.18,1);
-    }
+    spr(i,'cone',-1.18,1);
+    spr(i+1,'cone',1.18,1);
   }
   var boxRows=[36,70,118,160,210,258,310,350];
   for(k=0;k<boxRows.length;k++){
@@ -256,7 +255,7 @@ function buildTrack(){
   for(k=0;k<boosts.length;k++)spr(boosts[k]%N,'boost',((k%3)-1)*0.22,1);
   spr(1,'arch',0,1.15);
   placeObstacles();
-  /* a scenic curve with boxes and a hill for screenshots */
+  /* a straight stretch with room to show dodging for screenshots */
   SHOT_Z=segs[Math.min(138,N-16)].z;
 }
 function isHazardKind(k){return k==='barrel'||k==='crate'||k==='spud'||k==='cone'}
@@ -306,7 +305,7 @@ function makeRacer(id,name,im,skill,hex){
 }
 function resetRace(){
   hazards=[];missiles=[];particles=[];
-  raceT=0;countT=3.15;flash=0;goFlash=0;steer=0;skyOff=0;bounce=0;hurtShake=0;
+  raceT=0;countT=3.15;flash=0;goFlash=0;steer=0;skyOff=0;bounce=0;hurtShake=0;padL=0;padR=0;keys={};
   var cheese=makeRacer('cheese','起司車手',IM.cheese,0.96,'#f5a623');
   var bbq=makeRacer('bbq','BBQ車手',IM.bbq,0.90,'#6b3b1f');
   var chili=makeRacer('chili','香辣車手',IM.chili,0.93,'#e04a1f');
@@ -697,7 +696,7 @@ function update(dt){
   for(i=0;i<order.length;i++)order[i].place=i+1;
 
   camY+=(player.y+CAM_H-camY)*8*dt;
-  skyOff+=player.speed*curveAhead(player.z,4)*dt*0.000085;
+  /* sky and hills stay fixed; no lateral parallax */
   bounce=Math.sin(raceT*(10+player.speed/400))*Math.min(1,player.speed/MAX_SPD)*1.4;
   if(player.boostT>0)bounce*=1.15;
   flash=Math.max(0,flash-dt);
@@ -772,8 +771,7 @@ function drawSky(){
   if(ready(IM.sky)){
     var im=IM.sky, hf=0.90, destH=CY/hf, destW=destH*(im.naturalWidth/Math.max(1,im.naturalHeight));
     if(destW<W*1.2)destW=W*1.2;
-    var span=Math.max(1,destW-W);
-    var ox=-(span*0.5)-Math.sin(skyOff*0.35)*span*0.42;
+    var ox=-(Math.max(1,destW-W)*0.5);
     ctx.drawImage(im,ox,0,destW,destH);
   }else{
     var g=ctx.createLinearGradient(0,0,0,CY+8);
@@ -793,7 +791,7 @@ function drawSky(){
     for(i=0;i<3;i++){
       cw=W*(0.22+((i*5)%4)*0.03);
       ch=cw*(IM.cloud.naturalHeight/Math.max(1,IM.cloud.naturalWidth));
-      cx=mod(W*0.38*i+i*90-skyOff*22, W+cw)-cw*0.5;
+      cx=mod(W*0.38*i+i*90, W+cw)-cw*0.5;
       cy=H*0.05+(i%3)*H*0.04;
       ctx.globalAlpha=0.88;
       ctx.drawImage(IM.cloud,cx,cy,cw,ch);
@@ -827,11 +825,15 @@ function hillLayer(par,col,height,amp){
   ctx.lineTo(W,CY+8);ctx.lineTo(0,CY+8);ctx.fill();
 }
 
+function worldSX(worldX,scale){
+  /* camera is locked to the road center (camX = 0) */
+  return CX+scale*(worldX*ROAD_W)*CX;
+}
 function drawRoad(){
   var camZ=player.z-CAM_OFF;
   var base=segIndex(camZ);
-  var x=0,dx=0, n, seg, nxt, maxy=H, fog;
-  var camX=player.x*ROAD_W;
+  var n, seg, nxt, maxy=H, fog;
+  var camX=0;
   /* project all in range */
   for(n=0;n<=DRAW;n++){
     seg=segs[(base+n)%N];
@@ -839,13 +841,11 @@ function drawRoad(){
     var worldZ=seg.z+(looped?trackLen:0);
     var rel=worldZ-camZ;
     seg.p1.wx=0;seg.p1.wy=seg.y;
-    project(seg.p1,camX-x,camY,rel);
+    project(seg.p1,camX,camY,rel);
     if(n>0){
       nxt=segs[(base+n-1)%N];
       seg.p2=nxt.p1;
     }
-    x+=dx;
-    dx+=seg.curve;
     seg.fog=Math.pow(n/DRAW,2.2);
     seg.clip=H;
   }
@@ -950,11 +950,10 @@ function drawWorldSprites(){
       /* keep boost/oil pads from filling the control bar at the bottom */
       if((sp.kind==='boost'||sp.kind==='oil')&&rel<1200)continue;
       sh=spriteH(sp.kind,sw);
-      sx=CX+scale*(sp.x*ROAD_W-player.x*ROAD_W)*CX;
+      sx=worldSX(sp.x,scale);
       sy=CY-scale*(seg.y-camY)*CY+bounce;
       /* bob item boxes */
       if(sp.kind==='box'){sy-=sh*0.15+Math.sin(raceT*5+seg.i)*sh*0.08}
-      if(sp.kind==='spud'){sx+=Math.sin(raceT*2.4+seg.i)*sw*0.04}
       if(sy>H-96&&(sp.kind==='boost'||sp.kind==='oil'))continue;
       blit(imgOfKind(sp.kind),sx,sy,sw,sh,clip);
     }
@@ -962,21 +961,21 @@ function drawWorldSprites(){
     for(i=0;i<hazards.length;i++){
       if(segIndex(hazards[i].z)!==seg.i)continue;
       sw=uw*0.55;sh=spriteH('oil',sw);
-      sx=CX+scale*(hazards[i].x*ROAD_W-player.x*ROAD_W)*CX;
+      sx=worldSX(hazards[i].x,scale);
       sy=CY-scale*(seg.y-camY)*CY+bounce;
       blit(IM.oil,sx,sy,sw,sh,clip);
     }
     for(i=0;i<missiles.length;i++){
       if(segIndex(missiles[i].z)!==seg.i)continue;
       sw=uw*0.32;sh=spriteH('chili',sw);
-      sx=CX+scale*(missiles[i].x*ROAD_W-player.x*ROAD_W)*CX;
+      sx=worldSX(missiles[i].x,scale);
       sy=CY-scale*(seg.y-camY)*CY+bounce-sh*0.25;
       blit(IM.missile,sx,sy,sw,sh,clip);
     }
     for(i=0;i<particles.length;i++){
       if(segIndex(particles[i].z)!==seg.i)continue;
       var p=particles[i];
-      sx=CX+scale*(p.x*ROAD_W-player.x*ROAD_W)*CX;
+      sx=worldSX(p.x,scale);
       sy=CY-scale*(seg.y-camY)*CY+bounce-p.vy*p.life;
       ctx.globalAlpha=Math.max(0,p.life*2);
       ctx.fillStyle=p.c;
@@ -1001,9 +1000,8 @@ function drawKartAt(r,scale,roadY,clip,isP){
   var uw=unitW(scale);
   var sw=uw*(isP?0.62:0.54);
   var sh=sw*0.96;
-  var sx=CX+scale*(r.x*ROAD_W-player.x*ROAD_W)*CX;
+  var sx=worldSX(r.x,scale);
   var sy=CY-scale*(roadY-camY)*CY+bounce;
-  if(isP)sx=CX+r.steer*W*0.018;
   var im=r.im;
   if(isP){
     if(r.steer<-0.35)im=IM.playerL;
@@ -1188,22 +1186,22 @@ function shotPlay(){
   if(controls)controls.hidden=false;
   itemBtn.hidden=false;
   player.z=SHOT_Z;
-  player.x=-0.06;
+  player.x=-0.52;
   player.y=roadYAt(player.z);
   player.speed=MAX_SPD*0.9;
   player.laps=1;
   player.item='turbo';
   player.boostT=0;
-  player.steer=-0.15;
+  player.steer=-1;
   player.lives=3;player.invulnT=0;
-  sprHazard(segIndex(SHOT_Z+820),'barrel',-0.50,1.05);
-  sprHazard(segIndex(SHOT_Z+1080),'cone',0.18,1);
-  sprHazard(segIndex(SHOT_Z+1080),'cone',0.36,1);
-  sprHazard(segIndex(SHOT_Z+1380),'crate',0.50,1.05);
-  sprHazard(segIndex(SHOT_Z+1680),'spud',-0.18,1.08);
+  sprHazard(segIndex(SHOT_Z+780),'barrel',0.05,1.05);
+  sprHazard(segIndex(SHOT_Z+1040),'cone',0.42,1);
+  sprHazard(segIndex(SHOT_Z+1040),'cone',0.58,1);
+  sprHazard(segIndex(SHOT_Z+1320),'crate',0.50,1.05);
+  sprHazard(segIndex(SHOT_Z+1600),'spud',0.12,1.08);
   racers[1].z=SHOT_Z+640;racers[1].x=0.40;racers[1].speed=MAX_SPD*0.82;racers[1].laps=1;racers[1].y=roadYAt(racers[1].z);
-  racers[2].z=SHOT_Z+500;racers[2].x=-0.58;racers[2].speed=MAX_SPD*0.8;racers[2].laps=1;racers[2].y=roadYAt(racers[2].z);
-  racers[3].z=SHOT_Z+1080;racers[3].x=0.08;racers[3].speed=MAX_SPD*0.88;racers[3].laps=1;racers[3].y=roadYAt(racers[3].z);
+  racers[2].z=SHOT_Z+520;racers[2].x=0.18;racers[2].speed=MAX_SPD*0.8;racers[2].laps=1;racers[2].y=roadYAt(racers[2].z);
+  racers[3].z=SHOT_Z+1100;racers[3].x=0.55;racers[3].speed=MAX_SPD*0.88;racers[3].laps=1;racers[3].y=roadYAt(racers[3].z);
   camY=player.y+CAM_H;
   raceT=12;
   frozen=1;
@@ -1245,6 +1243,19 @@ window.PCKart={
   setMuted:setMuted,
   useItem:function(){useItem(player)},
   hurt:function(k){return hurtPlayer(k||'obs')},
+  view:function(){
+    size();draw();
+    var rel=CAM_OFF, scale=CAM_D/Math.max(40,rel);
+    var camZ=player.z-CAM_OFF, base=segIndex(camZ);
+    var near=segs[(base+8)%N].p1, far=segs[(base+40)%N].p1;
+    return {
+      cx:CX, camX:0,
+      roadNear:near&&near.sx, roadFar:far&&far.sx,
+      playerSx:worldSX(player.x,scale),
+      x:player.x, steer:player.steer, z:player.z
+    };
+  },
+
   state:function(){return {mode:state,place:player&&player.place,laps:player&&player.laps,spd:player&&player.speed,item:player&&player.item,n:N,shot:SHOT_Z,z:player&&player.z,x:player&&player.x,steer:player&&player.steer,curve:player?curveNow(player.z):0,off:player?Math.abs(player.x)>=1:false,padL:padL,padR:padR,keyL:!!keys.l,keyR:!!keys.r,slip:player&&player.slipT,lives:player&&player.lives,invuln:player&&player.invulnT,shield:player&&player.shieldT}},
   skipToRace:function(){
     if(state==='menu'||state==='done')start();
