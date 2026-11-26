@@ -31,10 +31,10 @@ function loadImg(src){
 }
 var zoomGuarded=false;
 function isTapControl(el){
-  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.hud-mute,.runback'));
+  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.hud-mute,.runback,.tdbtn,.tdpan,.td-spd,.td-next'));
 }
 function isHudControl(el){
-  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.qpads,.kpads,.karthud,.overlay,.shop-tophud,.hud-mute,.quest-mute,.kart-mute'));
+  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.qpads,.kpads,.karthud,.overlay,.shop-tophud,.hud-mute,.quest-mute,.kart-mute,.tdbtn,.tdpan,.tdhud,.td-spd,.td-next'));
 }
 function guardZoom(){
   if(zoomGuarded)return;
@@ -252,6 +252,19 @@ var audio=(function(){
       if(i===0)chord(t,[prog[bar][1],prog[bar][2],prog[bar][3]],bus,0.022);
       if(i===8)hat(t,bus,0.012);
       if(i===12)lead(t,prog[bar][3]*1.5,bus,0.03,0.24);
+    }},
+    td:{bpm:120,fn:function(s,t,bus){
+      var i=s%16;
+      var roots=[130.81,98.00,146.83,110.00];
+      var bar=(s>>4)%4;
+      if(i===0||i===8)kick(t,bus,0.2);
+      if(i===4||i===12)snare(t,bus,0.065);
+      if(i===2||i===6||i===10||i===14)hat(t,bus,0.028);
+      if(i%4===0)bass(t,roots[bar],bus,0.15,0.2);
+      if(i%4===2)bass(t,roots[bar]*1.5,bus,0.08,0.12);
+      var hook=[[0,392.00],[2,523.25],[4,587.33],[6,659.25],[8,587.33],[10,523.25],[12,659.25],[14,783.99]];
+      for(var k=0;k<hook.length;k++)if(hook[k][0]===i)lead(t,hook[k][1],bus,0.055,0.12);
+      if(i===0)chord(t,[261.63,329.63,392.00],bus,0.03);
     }}
   };
 
@@ -393,6 +406,37 @@ var audio=(function(){
         oscTone('triangle',783.99,783.99,t+0.2,0.16,0.16,sfxGain);
         oscTone('sine',1046.5,1318.5,t+0.32,0.4,0.18,sfxGain);
         noiseBurst(t+0.08,0.2,0.05,sfxGain,{type:'highpass',freq:2000});
+        break;
+      case 'build':
+        oscTone('triangle',261.63,392.00,t,0.12,0.16,sfxGain);
+        oscTone('sine',523.25,659.25,t+0.08,0.16,0.12,sfxGain);
+        noiseBurst(t,0.06,0.05,sfxGain,{type:'lowpass',freq:600});
+        break;
+      case 'upgrade':
+        oscTone('triangle',523.25,523.25,t,0.08,0.14,sfxGain);
+        oscTone('triangle',659.25,659.25,t+0.08,0.1,0.14,sfxGain);
+        oscTone('sine',783.99,1046.5,t+0.16,0.2,0.12,sfxGain);
+        break;
+      case 'shoot':
+        oscTone('square',620,280,t,0.06,0.06,sfxGain,{type:'lowpass',freq:1400});
+        noiseBurst(t,0.03,0.03,sfxGain,{type:'highpass',freq:1800});
+        break;
+      case 'splash':
+        noiseBurst(t,0.14,0.12,sfxGain,{type:'bandpass',freq:900,q:0.6});
+        oscTone('sawtooth',240,90,t,0.16,0.08,sfxGain,{type:'lowpass',freq:800});
+        break;
+      case 'slow':
+        oscTone('sine',880,520,t,0.18,0.08,sfxGain,{type:'lowpass',freq:1800});
+        oscTone('triangle',1320,700,t+0.04,0.16,0.05,sfxGain);
+        break;
+      case 'leak':
+        oscTone('sine',220,110,t,0.22,0.16,sfxGain,{type:'lowpass',freq:500});
+        noiseBurst(t,0.16,0.1,sfxGain,{type:'lowpass',freq:400});
+        break;
+      case 'wave':
+        oscTone('triangle',392.00,523.25,t,0.12,0.12,sfxGain);
+        oscTone('triangle',523.25,659.25,t+0.1,0.14,0.12,sfxGain);
+        kick(t,sfxGain,0.16);
         break;
       default:break;
     }
