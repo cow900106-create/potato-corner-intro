@@ -362,7 +362,7 @@ function buildStations(){
   }).join('');
   elFlavs.innerHTML=FLAVS.map(function(k){
     var lab=({onion:'洋蔥',bbq:'BBQ',cheese:'起司',chili:'香辣'}[k]||FLAV[k].name);
-    return '<button class="cell st flav flav-'+k+'" data-flav="'+k+'" type="button" aria-label="'+lab+'">'+icon(FLAV[k].img)+'<span class="flav-lab">'+lab+'</span></button>';
+    return '<button class="cell st flav flav-'+k+'" data-flav="'+k+'" type="button" aria-label="'+lab+'">'+icon(FLAV[k].img)+'</button>';
   }).join('');
   [].forEach.call(elRaws.querySelectorAll('.raw'),function(btn){
     btn.addEventListener('click',function(){startFry(btn.getAttribute('data-food'))});
@@ -644,10 +644,10 @@ function render(){
       c.order.forEach(function(o){
         if(o.type==='drink'){
           var dk=drinkOf(o);
-          html+='<span class="need drink-need drink-'+dk.id+(o.done?' done':'')+'">'+icon(dk.img)+'<em class="dlab">'+dk.name+'</em></span>';
+          html+='<span class="need drink-need drink-'+dk.id+(o.done?' done':'')+'" aria-label="'+dk.name+'">'+icon(dk.img)+'</span>';
         }else{
-          var lab=o.flavor&&FLAV[o.flavor]?FLAV[o.flavor].short:FOOD[o.type].name;
-          html+='<span class="need food-need'+(o.done?' done':'')+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'<em class="dlab">'+lab+'</em></span>';
+          var lab=(o.flavor&&FLAV[o.flavor]?FLAV[o.flavor].short+' ':'')+(FOOD[o.type]?FOOD[o.type].name:'');
+          html+='<span class="need food-need'+(o.flavor?' flav-'+o.flavor:'')+(o.done?' done':'')+'" aria-label="'+lab+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'</span>';
         }
       });
       html+='</div>';

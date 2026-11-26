@@ -212,22 +212,25 @@ body.play.shoppage.playing .hud-pause{display:block}
 /* upper ~40%: street / mall, customers in a row behind the counter */
 .shop-stage .plaza{position:absolute;left:0;right:0;top:0;height:56%;background:url("img/shop/plaza-wide.webp") center 30%/cover no-repeat;pointer-events:none;z-index:0}
 .shop-stage .custs{position:absolute;left:0;right:0;top:calc(52px + env(safe-area-inset-top,0px));bottom:46%;height:auto;z-index:4;padding:0 6px;box-sizing:border-box;pointer-events:none}
-.shop-stage .cust{position:absolute;left:50%;bottom:2%;width:20%;max-width:160px;display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent}
+.shop-stage .cust{position:absolute;left:50%;bottom:2%;width:22%;max-width:186px;max-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent;box-sizing:border-box}
 .shop-stage .cust.entering{left:94%!important;transform:translateX(-50%) scale(.7);opacity:.8;z-index:1}
 .shop-stage .cust.leaving{opacity:0;transform:translateX(-50%) translateY(10px) scale(.9)}
 .shop-stage .cust.happy-leave{opacity:0;transform:translateX(-50%) translateY(-16px) scale(.9)}
-.shop-stage .cust .bubble{background:#fff;border-radius:14px;padding:7px 8px 8px;width:auto;min-width:96px;max-width:168px;max-height:none;overflow:visible;box-shadow:0 3px 0 rgba(0,0,0,.16),0 5px 10px rgba(0,0,0,.14);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;position:relative;box-sizing:border-box}
+.shop-stage .cust .bubble{background:#fff;border-radius:16px;padding:6px 7px 7px;width:auto;min-width:0;max-width:100%;max-height:none;overflow:visible;box-shadow:0 3px 0 rgba(0,0,0,.16),0 5px 10px rgba(0,0,0,.14);display:flex;flex-wrap:nowrap;gap:6px;justify-content:center;align-items:center;position:relative;box-sizing:border-box;z-index:3}
 .shop-stage .cust .bubble:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:7px solid transparent;border-top-color:#fff;border-bottom-width:0}
-.shop-stage .cust .need{position:relative;display:inline-flex;flex-direction:column;align-items:center;background:#fbf4e4;border-radius:9px;padding:4px 10px 5px 4px;gap:2px}
-.shop-stage .cust .need img{width:32px;height:32px;object-fit:contain;display:block;max-width:none}
-.shop-stage .cust .need.drink-need img{width:38px;height:38px}
+.shop-stage .cust .need{position:relative;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;background:#fbf4e4;border-radius:12px;padding:4px 5px;gap:3px}
+.shop-stage .cust .need img{width:52px;height:52px;object-fit:contain;display:block;max-width:none}
+.shop-stage .cust .need.drink-need img{width:52px;height:52px}
 .shop-stage .cust .need.drink-cola{background:#f3e0d0}
 .shop-stage .cust .need.drink-sprite{background:#d9f5d4}
 .shop-stage .cust .need.drink-tea{background:#f8e3b8}
-.shop-stage .cust .need img.flav{position:absolute;right:1px;top:18px;width:22px;height:22px;margin:0;background:#fff;border-radius:50%;padding:1px;box-shadow:0 1px 0 rgba(0,0,0,.2)}
+.shop-stage .cust .need img.flav{position:static;width:34px;height:34px;margin:0;background:#fff;border-radius:9px;padding:2px;box-shadow:0 0 0 2px rgba(0,0,0,.18),0 1px 0 rgba(0,0,0,.12);flex:none}
+.shop-stage .cust .need.flav-onion img.flav{box-shadow:0 0 0 2px #cfc4a0,0 1px 0 rgba(0,0,0,.12)}
+.shop-stage .cust .need.flav-bbq img.flav{box-shadow:0 0 0 2px #6b3a18,0 1px 0 rgba(0,0,0,.12)}
+.shop-stage .cust .need.flav-cheese img.flav{box-shadow:0 0 0 2px #ee8416,0 1px 0 rgba(0,0,0,.12)}
+.shop-stage .cust .need.flav-chili img.flav{box-shadow:0 0 0 2px #c45a28,0 1px 0 rgba(0,0,0,.12)}
 .shop-stage .cust .need.done{opacity:.32;filter:grayscale(.7)}
-.shop-stage .cust .need.drink-need,.shop-stage .cust .need.food-need{flex-direction:column;gap:1px}
-.shop-stage .cust .need .dlab{display:block;font-size:14px;font-weight:900;line-height:1.1;color:#1a1a1a;font-style:normal;letter-spacing:0;white-space:nowrap}
+.shop-stage .cust .need .dlab{display:none!important}
 .shop-stage .cust .pbar{width:76%;height:8px;background:rgba(255,255,255,.55);border-radius:99px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.2);flex:none}
 .shop-stage .cust .pbar i{display:block;height:100%;border-radius:99px}
 .shop-stage .cust .body{width:50px;height:64px;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));pointer-events:none;display:block;max-width:none}
@@ -283,21 +286,8 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .slot .dish{object-fit:contain;width:90%;height:90%;z-index:1}
 .shop-stage .drink-eq .art{object-fit:cover;width:104%;height:104%;object-position:center 58%}
 .shop-stage .raw img{width:104%;height:104%;object-fit:cover;object-position:center 42%;position:relative;z-index:1}
-.shop-stage .flav img{width:100%;height:82%;object-fit:contain;object-position:center 18%;position:relative;z-index:1;margin-bottom:0}
-.shop-stage .flav .flav-lab{
-  display:block!important;
-  position:absolute;left:50%;bottom:3px;right:auto;top:auto;
-  transform:translateX(-50%);
-  z-index:6;margin:0;padding:2px 6px 2px;
-  font-size:9px;font-weight:900;letter-spacing:.02em;line-height:1.1;text-align:center;
-  color:#fff;
-  text-shadow:0 0 2px #000,0 1px 0 #000,0 -1px 0 #000,1px 0 0 #000,-1px 0 0 #000,0 1px 2px #000;
-  background:rgba(16,12,8,.9);
-  border-radius:99px;
-  pointer-events:none;white-space:nowrap;overflow:visible;text-overflow:clip;
-  box-shadow:0 1px 2px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.2);
-  background-image:none;
-}
+.shop-stage .flav img{width:108%;height:108%;object-fit:contain;object-position:center center;position:relative;z-index:1;margin-bottom:0}
+.shop-stage .flav .flav-lab{display:none!important}
 .shop-stage .st span{display:none!important}
 .shop-stage #plates{background:linear-gradient(180deg,rgba(120,90,30,.22),rgba(40,30,12,.12));border-radius:6px;padding:3px}
 .shop-stage #serves{background:linear-gradient(180deg,rgba(20,120,50,.26),rgba(10,40,20,.12));border-radius:6px;padding:3px}
