@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" class="kartpage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#148c44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>土豆卡丁車｜薯條小遊戲（非官方）</title>
+<meta name="description" content="3 圈競速小遊戲。車子會自己加速，左右轉向、吃道具、踩加速帶，搶先衝線。非官方小遊戲。">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="games.css?v=20">
+</head>
+<body class="play kartpage">
+<div class="stagewrap" id="wrap">
+<canvas id="stage" aria-label="土豆卡丁車遊戲畫面"></canvas>
+<a class="kartback" href="index.html">選單</a>
+<button class="kart-mute" id="muteBtn" type="button" aria-pressed="false" aria-label="音效" title="音效">聲音</button>
+<div class="karthud" id="hud" hidden>
+  <div class="kh-top">
+    <div class="kh-rank" id="rank">4th</div>
+    <div class="kh-meta">
+      <span>圈 <b id="lap">1</b>/3</span>
+      <span><b id="spd">0</b> km/h</span>
+    </div>
+  </div>
+  <div class="kh-prog" id="prog" aria-label="賽程進度">
+    <span class="kh-track"></span>
+    <i class="kp kp-bbq" id="dot-bbq"></i>
+    <i class="kp kp-chili" id="dot-chili"></i>
+    <i class="kp kp-cheese" id="dot-cheese"></i>
+    <i class="kp kp-you" id="dot-you"></i>
+  </div>
+</div>
+<button class="kart-item" id="itemBtn" type="button" hidden aria-label="使用道具">
+  <img id="itemIcon" alt="">
+  <span id="itemLab">道具</span>
+</button>
+<div class="overlay kartstart" id="ov">
+<img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
+<p class="ovt" id="ovT">土豆卡丁車</p>
+<p class="ovs" id="ovS">3 圈競速，先衝線就贏。車子會自己加速。</p>
+<div class="how" id="how">
+<div><span>↔</span> 按住左半邊或右半邊轉向，也可以左右拖曳。電腦用方向鍵或 A D</div>
+<div><span>⇢</span> 踩上綠色加速帶會衝刺，路旁問號箱可以拿到道具</div>
+<div><span>★</span> 右下角或空白鍵放道具：香辣渦輪、起司護盾、薯條油漬、追蹤辣椒彈</div>
+<div><span>！</span> 衝出跑道會減速。最佳成績只存在你的手機瀏覽器</div>
+</div>
+<p class="kart-best" id="bestLine"></p>
+<button class="btn" id="go" type="button">開始比賽</button>
+<p class="fine" id="fine">這是非官方小遊戲，沒有兌換或獎品。</p>
+</div>
+</div>
+<script src="games.js?v=2"></script>
+<script src="kart.js?v=1"></script>
+</body>
+</html>
