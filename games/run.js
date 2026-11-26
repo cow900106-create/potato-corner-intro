@@ -6,11 +6,12 @@ var ov=d.getElementById('ov'),ovT=d.getElementById('ovT'),ovS=d.getElementById('
 var elScore=d.getElementById('score'),elDist=d.getElementById('dist'),elBest=d.getElementById('best');
 var KEY='pcGameRunBest',KEYD='pcGameRunBestDist';
 var W=0,H=0,dpr=1,focal=1,horizon=0,camH=1.8;
-var LANE=1.22,NEAR=5.7,FAR=78,ROAD=1.60;
-var CHAR=0.50; // width vs nearest lane
-var FEET=0.80; // feet at 80% of canvas height
-var HORIZON=0.20; // vanishing point, 18–22%
-var PERSP=0.50; // <1 keeps the far road wider
+var LANE=1.22,NEAR=5.7,FAR=78,ROAD=1.52;
+var CHAR=0.50; // width vs nearest lane; scales with the zoomed track
+var FEET=0.84; // player a little lower so the track fills more of the phone
+var HORIZON=0.13; // just a sliver of clean sky above the vanishing point
+var PERSP=0.34; // vertical falloff
+var PERSP_X=0.10; // shallower width falloff so mid-ground lanes stay edge-to-edge
 var run=false,frozen=false,crashing=false,crashT=0,last=0,raf=0,camZ=0,speed=0,dist=0,score=0,coins=0,pops=[];
 var best=G.getBest(KEY),bestDist=G.getBest(KEYD);
 elBest.textContent=best;elDist.textContent=0;
@@ -48,22 +49,23 @@ function size(){
   cv.style.width=W+'px';cv.style.height=H+'px';
   ctx.setTransform(dpr,0,0,dpr,0,0);
   horizon=H*HORIZON;
-  // near road slightly past the screen edges
-  var fill=1.12;
+  // 3 lanes fill left–right from the player's feet through mid-ground
+  var fill=1.18;
   focal=W*fill*NEAR/(2*LANE*ROAD);
   camH=(H*FEET-horizon)*NEAR/focal;
   draw();
 }
 
-function depthZ(relZ){
+function depthZ(relZ,k){
   var z=Math.max(relZ,0.55);
   if(z<=NEAR)return z;
-  return NEAR+(z-NEAR)*PERSP;
+  return NEAR+(z-NEAR)*(k==null?PERSP:k);
 }
 function proj(wx,wy,relZ){
-  var z=depthZ(relZ);
-  var s=focal/z;
-  return {x:W/2+wx*s,y:horizon+(camH-wy)*s,s:s};
+  var zy=depthZ(relZ,PERSP);
+  var zx=depthZ(relZ,PERSP_X);
+  var sy=focal/zy,sx=focal/zx;
+  return {x:W/2+wx*sx,y:horizon+(camH-wy)*sy,s:sx};
 }
 
 function laneX(lane){return lane*LANE}
@@ -413,47 +415,32 @@ function drawPrism(cx,yG,w,h,s,front,side,top,opts){
 var ARCH_GAP=15.5, GATE_W=5.25, GATE_H=4.15, BLDG_GAP=16.5;
 
 function drawSky(){
-  // dusk strip only, no sun
+  // a little clean sky above the horizon — no hills, no roadside scenery
   var g=ctx.createLinearGradient(0,0,0,horizon);
-  g.addColorStop(0,'#1a3d52');
-  g.addColorStop(0.55,'#4d7c8a');
-  g.addColorStop(1,'#f0d6a0');
+  g.addColorStop(0,'#6ec4e6');
+  g.addColorStop(0.55,'#b7e4f4');
+  g.addColorStop(1,'#e8f4fa');
   ctx.fillStyle=g;ctx.fillRect(0,0,W,horizon+1);
-  var g2=ctx.createLinearGradient(0,horizon,0,H);
-  g2.addColorStop(0,'#3a4624');
-  g2.addColorStop(0.4,'#5a6a32');
-  g2.addColorStop(1,'#6e7c38');
-  ctx.fillStyle=g2;ctx.fillRect(0,horizon,W,H-horizon+2);
-  // soft distant hills only — no roadside props
-  ctx.save();ctx.globalAlpha=0.28;
-  ctx.fillStyle='#2a3a32';
-  ctx.beginPath();
-  ctx.moveTo(0,horizon);
-  for(var i=0;i<=12;i++){
-    var x=W*i/12;
-    var hh=horizon*(0.08+((i*19)%5)*0.025);
-    ctx.lineTo(x,horizon-hh);
-  }
-  ctx.lineTo(W,horizon);ctx.closePath();ctx.fill();
-  ctx.restore();
+  // below the horizon, fill with the same pale sky so any sliver at the
+  // far sides is clean sky, not a grassy landscape
+  ctx.fillStyle='#e8f4fa';
+  ctx.fillRect(0,horizon,W,H-horizon+2);
 }
 
 function drawRoad(){
-  var segs=32,rh=roadHalf(),DRAW_FAR=FAR*2.2,bed=rh+6.5;
+  var segs=32,rh=roadHalf(),DRAW_FAR=FAR*2.2,bed=rh+0.06;
   function trap(x0,x1,zA,zB){
     var a=proj(x0,0,zA),b=proj(x1,0,zA),c=proj(x1,0,zB),d=proj(x0,0,zB);
     ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.lineTo(c.x,c.y);ctx.lineTo(d.x,d.y);ctx.closePath();
   }
-  var halfLane=LANE*0.46;
+  var halfLane=LANE*0.49;
   for(var i=segs;i>=0;i--){
     var z0=NEAR+(DRAW_FAR-NEAR)*(i+1)/segs;
     var z1=NEAR+(DRAW_FAR-NEAR)*i/segs;
-    ctx.fillStyle=(i%2===0)?'#4a5528':'#3f4a22';
-    trap(-bed,bed,z0,z1);ctx.fill();
     if(z0>FAR+8)continue;
-    // dark grooves between the three tracks
+    // dark grooves between the three tracks — no grassy shoulder
     ctx.fillStyle=(i%2===0)?'#6a5818':'#5a4a14';
-    trap(-rh,rh,z0,z1);ctx.fill();
+    trap(-bed,bed,z0,z1);ctx.fill();
     var stripe=i%2===0;
     for(var L=-1;L<=1;L++){
       var cx=laneX(L);
@@ -461,10 +448,12 @@ function drawRoad(){
       trap(cx-halfLane,cx+halfLane,z0,z1);ctx.fill();
     }
   }
-  var farZ=DRAW_FAR,Lp=proj(-bed,0,farZ),Rp=proj(bed,0,farZ);
-  if(Lp.y>horizon+1){
-    ctx.fillStyle='#3a4624';
-    ctx.beginPath();ctx.moveTo(Lp.x,Lp.y);ctx.lineTo(Rp.x,Rp.y);ctx.lineTo(W/2,horizon);ctx.closePath();ctx.fill();
+  // let the track end a little short of the horizon instead of a grassy vanishing wedge
+  var farZ=Math.min(DRAW_FAR,FAR+4),Lp=proj(-bed,0,farZ),Rp=proj(bed,0,farZ);
+  if(Lp.y>horizon+2){
+    ctx.fillStyle='#5a4a14';
+    ctx.beginPath();ctx.moveTo(Lp.x,Lp.y);ctx.lineTo(Rp.x,Rp.y);
+    ctx.lineTo(W/2,horizon+2);ctx.closePath();ctx.fill();
   }
   var yN=proj(0,0,NEAR).y;
   if(yN<H){
