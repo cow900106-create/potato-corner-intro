@@ -29,5 +29,42 @@ function loadImg(src){
   im.src=asset(src);
   return im;
 }
-w.PCGames={asset:asset,pickHtml:pickHtml,getBest:getBest,setBest:setBest,loadImg:loadImg};
+var zoomGuarded=false;
+function isTapControl(el){
+  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item'));
+}
+function isHudControl(el){
+  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.qpads,.kpads,.karthud,.overlay,.shop-tophud,.hud-mute,.quest-mute,.kart-mute'));
+}
+function guardZoom(){
+  if(zoomGuarded)return;
+  zoomGuarded=true;
+  var opt={capture:true,passive:false};
+  function stopGest(e){if(e.cancelable)e.preventDefault()}
+  document.addEventListener('gesturestart',stopGest,opt);
+  document.addEventListener('gesturechange',stopGest,opt);
+  document.addEventListener('gestureend',stopGest,opt);
+  var lastEnd=0;
+  document.addEventListener('touchend',function(e){
+    var now=Date.now();
+    var gap=now-lastEnd;
+    lastEnd=now;
+    if(gap>=350)return;
+    if(e.touches&&e.touches.length>0)return;
+    if(!e.cancelable)return;
+    e.preventDefault();
+    /* replay click for shop/match controls that listen on click, not pointerdown */
+    var t=e.target&&isTapControl(e.target)?e.target.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item'):null;
+    if(t&&typeof t.click==='function')t.click();
+  },opt);
+  function blockPinch(e){
+    if(!e.touches||e.touches.length<2)return;
+    /* allow simultaneous left+right virtual buttons; block pinch on the canvas/stage */
+    if(!isHudControl(e.target)&&e.cancelable)e.preventDefault();
+  }
+  document.addEventListener('touchstart',blockPinch,opt);
+  document.addEventListener('touchmove',blockPinch,opt);
+}
+guardZoom();
+w.PCGames={asset:asset,pickHtml:pickHtml,getBest:getBest,setBest:setBest,loadImg:loadImg,guardZoom:guardZoom};
 })(window);

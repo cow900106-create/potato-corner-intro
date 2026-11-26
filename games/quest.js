@@ -1311,9 +1311,10 @@ window.PCQuest={
   shotAttack:shotAttack,
   shotSkill:shotSkill,
   freeze:function(on){frozen=!!on;if(frozen)draw()},
-  info:function(){return {state:state,stage:stage,phase:phase,lv:player&&player.lv,hp:player&&player.hp,score:score,kills:kills,combo:player&&player.combo,skill:player&&player.skill&&player.skill.t,en:enemies.map(function(e){return e.kind+' '+e.hp}),W:W,H:H}}
+  info:function(){return {state:state,stage:stage,phase:phase,lv:player&&player.lv,hp:player&&player.hp,score:score,kills:kills,combo:player&&player.combo,atkT:player&&player.atkT,y:player&&player.y,vx:player&&player.vx,onG:player&&player.onG,skillT:player&&player.skillT,skill:player&&player.skill&&player.skill.t,en:enemies.map(function(e){return e.kind+' '+e.hp}),W:W,H:H}}
 };
 
+if(window.PCGames&&PCGames.guardZoom)PCGames.guardZoom();
 setMuteUI();
 size();
 if(bestLine){
