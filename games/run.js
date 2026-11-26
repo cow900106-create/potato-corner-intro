@@ -22,16 +22,17 @@ var IM={
   cheese:img('img/run/jar-cheese.webp'),
   chili:img('img/run/jar-chili.webp'),
   coin:img('img/run/coin.webp'),
-  charRun:img('img/run/char-run.webp'),
-  charJump:img('img/run/char-jump.webp'),
-  charSlide:img('img/run/char-slide.webp'),
+  run:[img('img/run/potato-run0.webp'),img('img/run/potato-run1.webp'),img('img/run/potato-run2.webp'),img('img/run/potato-run3.webp')],
+  jump:[img('img/run/potato-jump0.webp'),img('img/run/potato-jump1.webp')],
+  roll:[img('img/run/potato-roll0.webp'),img('img/run/potato-roll1.webp')],
+  charRun:img('img/run/potato-run0.webp'),
+  charJump:img('img/run/potato-jump0.webp'),
+  charSlide:img('img/run/potato-roll0.webp'),
   fries:img('img/run/obs-arch.webp'),
   loopy:img('img/run/obs-loopy.webp'),
   pops:img('img/run/obs-pops.webp'),
   drink:img('img/run/obs-drink.webp'),
   train:img('img/run/obs-train.webp'),
-  bldgA:img('img/run/building-a.webp'),
-  bldgB:img('img/run/building-b.webp')
 };
 var FLAVS=['onion','bbq','cheese','chili'];
 function img(src){var i=new Image();i.src=src;return i}
@@ -48,7 +49,7 @@ function size(){
   ctx.setTransform(dpr,0,0,dpr,0,0);
   horizon=H*HORIZON;
   // near road slightly past the screen edges
-  var fill=1.04;
+  var fill=1.12;
   focal=W*fill*NEAR/(2*LANE*ROAD);
   camH=(H*FEET-horizon)*NEAR/focal;
   draw();
@@ -127,17 +128,17 @@ function jump(){
   if(player.state==='roll')return;
   var fl=supportY();
   if(player.y>fl+0.12)return;
-  player.state='jump';player.vy=8.7;player.y=fl+0.02;player.landT=0;
+  player.state='jump';player.vy=10.0;player.y=fl+0.02;player.landT=0;
 }
 function roll(){
   var fl=supportY();
   if(player.state==='jump'&&player.y>fl+0.3)return;
-  player.state='roll';player.rollT=0.52;player.vy=0;player.y=fl;
+  player.state='roll';player.rollT=0.82;player.vy=0;player.y=fl;
 }
 
 /* -------- spawn -------- */
 function resetWorld(){
-  objs=[];pops=[];camZ=0;speed=21.5;dist=0;coins=0;setScore(0);
+  objs=[];pops=[];camZ=0;speed=19;dist=0;coins=0;setScore(0);
   player.lane=0;player.x=0;player.y=0;player.vy=0;player.state='run';player.rollT=0;player.tilt=0;player.landT=0;
   crashing=false;crashT=0;
   var base=camZ+NEAR;
@@ -175,23 +176,28 @@ function seedChain(z,lane,n,gap,y0,y1){
 
 function spawnRow(){
   var z=nextZ;
-  var gap=Math.max(16,speed*0.62);
+  var gap=Math.max(20,speed*0.95);
   nextZ=z+gap;
   var r=Math.random();
   var easy=dist<55;
   if(easy){
-    if(r<.4){
+    if(r<.22){
       var lane=(Math.random()*3|0)-1;
       seedChain(z,lane,5,0.9,0.45,0.45);
       if(Math.random()<.45)seedChain(z+gap*0.35,(lane+1+Math.random()*2|0)%3-1,4,0.9,0.45,0.45);
-    }else if(r<.7){
+    }else if(r<.44){
       place(z,(Math.random()*3|0)-1, Math.random()<.5?'loopy':'pops');
+    }else if(r<.66){
+      place(z,(Math.random()*3|0)-1,'fries');
+      seedChain(z,((Math.random()*3|0)-1),3,0.85,0.45,0.45);
+    }else if(r<.82){
+      place(z,(Math.random()*3|0)-1,'drink');
     }else{
       var L=(Math.random()*3|0)-1;
       place(z,L,'train');
       seedChain(z-5,L,6,0.9,0.45,1.52);
       seedChain(z+1.2,L,5,1.5,1.52,1.52);
-      nextZ=z+10.4+Math.max(12,gap*0.5);
+      nextZ=z+10.4+Math.max(16,gap*0.75);
     }
     return;
   }
@@ -201,7 +207,7 @@ function spawnRow(){
     seedChain(z-5.2,L,6,0.9,0.45,1.52);
     seedChain(z+1.2,L,5,1.55,1.52,1.52);
     if(Math.random()<.45)place(z, L===0?1:-1, 'drink');
-    nextZ=z+10.4+Math.max(12,gap*0.5);
+    nextZ=z+10.4+Math.max(16,gap*0.75);
   }else if(r<.34){
     var open=(Math.random()*3|0)-1;
     for(var L=-1;L<=1;L++)if(L!==open)place(z,L,'drink');
@@ -236,7 +242,7 @@ function place(z,lane,kind){
 function profile(kind){
   if(kind==='loopy')return {shape:'low',h:0.82,w:1.16};
   if(kind==='pops')return {shape:'low',h:0.90,w:1.16};
-  if(kind==='drink')return {shape:'tall',h:2.55,w:1.08};
+  if(kind==='drink')return {shape:'tall',h:2.85,w:1.08};
   if(kind==='fries')return {shape:'arch',h:2.45,w:1.20,gap:0.82};
   if(kind==='train')return {shape:'platform',h:1.08,w:1.16};
   return {shape:'low',h:0.8,w:1.0};
@@ -245,14 +251,14 @@ function profile(kind){
 function playerBox(){
   var body=LANE*CHAR;
   var h=player.state==='roll'?0.42:0.95;
-  return {x:player.x,w:body*0.62,y:player.y,h:h,z:camZ+NEAR};
+  return {x:player.x,w:body*0.62,y:player.y,h:h,z:camZ+NEAR+1.15};
 }
 
 function collide(o){
   var pb=playerBox();
   var rel=o.z-pb.z;
   var zLen=o.len||0.55;
-  var sweep=Math.max(0.8,speed*0.06);
+  var sweep=Math.max(1.4,speed*0.10);
   if(rel>sweep||rel<-zLen)return false;
   var ox=laneX(o.lane);
   if(Math.abs(ox-pb.x)>LANE*0.48)return false;
@@ -281,7 +287,7 @@ function update(dt){
     if(crashT>0.6)end();
     return;
   }
-  speed=Math.min(48,21.5+dist*0.066);
+  speed=Math.min(36,19+17*(1-Math.exp(-Math.max(0,dist)/300)));
   camZ+=speed*dt;
   dist=camZ*1.15;
   elDist.textContent=String(Math.floor(dist));
@@ -298,7 +304,7 @@ function update(dt){
   }
   var fl=supportY();
   if(player.state==='jump'||player.y>fl){
-    player.vy-=22*dt;
+    player.vy-=20*dt;
     player.y+=player.vy*dt;
     if(player.y<=fl){
       player.y=fl;player.vy=0;
@@ -418,18 +424,17 @@ function drawSky(){
   g2.addColorStop(0.4,'#5a6a32');
   g2.addColorStop(1,'#6e7c38');
   ctx.fillStyle=g2;ctx.fillRect(0,horizon,W,H-horizon+2);
-  // modest skyline, kept low so the track stays the subject
-  ctx.save();ctx.globalAlpha=0.32;
-  for(var i=-9;i<=9;i++){
-    if(Math.abs(i)<2)continue;
-    var hh=horizon*(0.14+((Math.abs(i*17)+3)%6)*0.03);
-    var ww=Math.max(7,W*0.028+((i*13)%6));
-    var x=W/2+i*W*0.068;
-    ctx.fillStyle=i%2?'#2e3a2c':'#3a3428';
-    ctx.fillRect(x,horizon-hh,ww,hh);
-    ctx.fillStyle='#243028';
-    ctx.fillRect(x-1,horizon-hh-3,ww+2,3.5);
+  // soft distant hills only — no roadside props
+  ctx.save();ctx.globalAlpha=0.28;
+  ctx.fillStyle='#2a3a32';
+  ctx.beginPath();
+  ctx.moveTo(0,horizon);
+  for(var i=0;i<=12;i++){
+    var x=W*i/12;
+    var hh=horizon*(0.08+((i*19)%5)*0.025);
+    ctx.lineTo(x,horizon-hh);
   }
+  ctx.lineTo(W,horizon);ctx.closePath();ctx.fill();
   ctx.restore();
 }
 
@@ -475,7 +480,6 @@ function drawRoad(){
       ctx.closePath();ctx.fill();
     }
   }
-  drawRails(rh);
 }
 
 function drawRails(rh){
@@ -564,8 +568,8 @@ function drawObj(o){
   if(o.typ==='coin'){
     var wy=o.wy!=null?o.wy:(o._above?0.95:0.45);
     var p=proj(lx,wy,rel);
-    var sz=Math.max(13,0.40*p.s);
-    var im=ready(IM.coin)?IM.coin:(ready(IM[o.kind])?IM[o.kind]:null);
+    var sz=Math.max(16,0.52*p.s);
+    var im=ready(IM[o.kind])?IM[o.kind]:(ready(IM.coin)?IM.coin:null);
     if(im){
       ctx.save();
       ctx.globalAlpha=fade*0.5;
@@ -643,13 +647,27 @@ function drawTrain(o,lx,rel){
 }
 
 /* -------- potato, drawn from behind with Q clay sprites -------- */
+function charFrame(){
+  if(player.state==='jump'){
+    var fl=supportY();
+    return (player.vy<=1.2||player.y>fl+1.05)?(IM.jump[1]||IM.jump[0]):(IM.jump[0]||IM.charJump);
+  }
+  if(player.state==='roll'){
+    var frames=IM.roll||[];
+    if(!frames.length)return IM.charSlide;
+    var t=1-Math.max(0,player.rollT)/0.82;
+    return frames[(Math.floor(t*frames.length*2)+ (t>0.5?1:0))%frames.length]||frames[0];
+  }
+  var frames=IM.run||[];
+  if(!frames.length)return IM.charRun;
+  return frames[Math.floor(Math.abs(camZ)*0.48)%frames.length]||frames[0];
+}
+
 function drawPlayer(){
   var gnd=proj(player.x,supportY(),NEAR);
   var feet=proj(player.x,player.y,NEAR);
   var cw=LANE*gnd.s*CHAR;
-  var im=IM.charRun;
-  if(player.state==='jump')im=IM.charJump;
-  else if(player.state==='roll')im=IM.charSlide;
+  var im=charFrame();
   if(!ready(im))return;
   var ch=cw*(im.naturalHeight/im.naturalWidth);
   var bounce=0;
@@ -675,7 +693,6 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   drawSky();
   drawRoad();
-  drawBuildings();
   var list=objs.slice().sort(function(a,b){return b.z-a.z});
   var pz=camZ+NEAR;
   var drawnP=false;
@@ -746,11 +763,11 @@ window.PCRun={
   setCam:function(z){camZ=z;dist=camZ*1.15;elDist.textContent=String(Math.floor(dist));setScore(Math.floor(dist)+coins)},
   setState:function(s){
     player.state=s;player.tilt=0;player.landT=0;
-    if(s==='roll'){player.rollT=0.28;player.y=0;player.vy=0}
-    else if(s==='jump'){player.vy=1.2;player.y=1.2}
+    if(s==='roll'){player.rollT=0.7;player.y=0;player.vy=0}
+    else if(s==='jump'){player.vy=2.2;player.y=1.55}
     else{player.y=0;player.vy=0;player.rollT=0}
   },
-  info:function(){return {camZ:camZ,dist:dist,lane:player.lane,state:player.state,y:player.y,W:W,H:H,objs:objs.map(function(o){return {typ:o.typ,kind:o.kind,lane:o.lane,z:o.z,rel:o.z-camZ}})}}
+  info:function(){return {camZ:camZ,dist:dist,speed:speed,lane:player.lane,state:player.state,y:player.y,W:W,H:H,objs:objs.map(function(o){return {typ:o.typ,kind:o.kind,lane:o.lane,z:o.z,rel:o.z-camZ}})}}
 };
 size();requestAnimationFrame(size);
 })();
