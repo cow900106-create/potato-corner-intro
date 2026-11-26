@@ -7,11 +7,11 @@ var elScore=d.getElementById('score'),elDist=d.getElementById('dist'),elBest=d.g
 var KEY='pcGameRunBest',KEYD='pcGameRunBestDist';
 var W=0,H=0,dpr=1,focal=1,horizon=0,camH=1.8;
 var LANE=1.22,NEAR=5.7,FAR=78,ROAD=1.52;
-var CHAR=0.50; // width vs nearest lane; scales with the zoomed track
+var CHAR=0.54; // width vs nearest lane; balanced to the widened track
 var FEET=0.84; // player a little lower so the track fills more of the phone
 var HORIZON=0.13; // just a sliver of clean sky above the vanishing point
 var PERSP=0.34; // vertical falloff
-var PERSP_X=0.10; // shallower width falloff so mid-ground lanes stay edge-to-edge
+var PERSP_X=0.13; // still wide in mid-ground, but the far tip eases more naturally
 var run=false,frozen=false,crashing=false,crashT=0,last=0,raf=0,camZ=0,speed=0,dist=0,score=0,coins=0,pops=[];
 var best=G.getBest(KEY),bestDist=G.getBest(KEYD);
 elBest.textContent=best;elDist.textContent=0;
@@ -145,22 +145,22 @@ function resetWorld(){
   crashing=false;crashT=0;
   var base=camZ+NEAR;
   nextZ=base+72;
-  seedChain(base+8,0,5,0.95,0.45,0.45);
-  seedChain(base+12,1,4,0.9,0.45,0.45);
+  seedChain(base+8,0,5,1.85,0.45,0.45);
+  seedChain(base+12,1,4,1.85,0.45,0.45);
   place(base+18,-1,'loopy');
-  seedChain(base+18,-1,3,0.85,0.95,0.95);
+  seedChain(base+18,-1,3,1.55,0.88,0.88);
   // jumpable train on the right, coin ramp leading onto the roof
   place(base+24,1,'train');
-  seedChain(base+18.5,1,7,0.9,0.45,1.52);
-  seedChain(base+25.2,1,6,1.5,1.52,1.52);
+  seedChain(base+18.4,1,5,1.4,0.45,1.52);
+  seedChain(base+25.4,1,4,2.05,1.52,1.52);
   place(base+28,0,'pops');
   place(base+40,-1,'drink');
-  seedChain(base+40,0,5,0.95,0.45,0.45);
+  seedChain(base+40,0,5,1.85,0.45,0.45);
   place(base+48,0,'fries');
-  seedChain(base+48,0,3,0.8,0.45,0.45);
+  seedChain(base+48,0,3,1.7,0.45,0.45);
   place(base+58,-1,'train');
-  seedChain(base+53,-1,6,0.9,0.45,1.52);
-  seedChain(base+59,-1,5,1.5,1.52,1.52);
+  seedChain(base+52.6,-1,5,1.4,0.45,1.52);
+  seedChain(base+59.2,-1,4,2.05,1.52,1.52);
   place(base+72,1,'drink');
 }
 
@@ -168,7 +168,7 @@ function seedCoins(z,lane){
   seedChain(z,lane,1,1,0.45,0.45);
 }
 function seedChain(z,lane,n,gap,y0,y1){
-  n=n||5;gap=gap==null?0.95:gap;
+  n=n||5;gap=gap==null?1.85:gap;
   y0=y0==null?0.45:y0;y1=y1==null?y0:y1;
   for(var i=0;i<n;i++){
     var t=n===1?0:i/(n-1);
@@ -185,20 +185,20 @@ function spawnRow(){
   if(easy){
     if(r<.22){
       var lane=(Math.random()*3|0)-1;
-      seedChain(z,lane,5,0.9,0.45,0.45);
-      if(Math.random()<.45)seedChain(z+gap*0.35,(lane+1+Math.random()*2|0)%3-1,4,0.9,0.45,0.45);
+      seedChain(z,lane,5,1.85,0.45,0.45);
+      if(Math.random()<.45)seedChain(z+gap*0.35,(lane+1+Math.random()*2|0)%3-1,4,1.85,0.45,0.45);
     }else if(r<.44){
       place(z,(Math.random()*3|0)-1, Math.random()<.5?'loopy':'pops');
     }else if(r<.66){
       place(z,(Math.random()*3|0)-1,'fries');
-      seedChain(z,((Math.random()*3|0)-1),3,0.85,0.45,0.45);
+      seedChain(z,((Math.random()*3|0)-1),3,1.7,0.45,0.45);
     }else if(r<.82){
       place(z,(Math.random()*3|0)-1,'drink');
     }else{
       var L=(Math.random()*3|0)-1;
       place(z,L,'train');
-      seedChain(z-5,L,6,0.9,0.45,1.52);
-      seedChain(z+1.2,L,5,1.5,1.52,1.52);
+      seedChain(z-5.2,L,5,1.4,0.45,1.52);
+      seedChain(z+1.3,L,4,2.05,1.52,1.52);
       nextZ=z+10.4+Math.max(16,gap*0.75);
     }
     return;
@@ -206,32 +206,32 @@ function spawnRow(){
   if(r<.2){
     var L=(Math.random()*3|0)-1;
     place(z,L,'train');
-    seedChain(z-5.2,L,6,0.9,0.45,1.52);
-    seedChain(z+1.2,L,5,1.55,1.52,1.52);
+    seedChain(z-5.2,L,5,1.4,0.45,1.52);
+    seedChain(z+1.3,L,4,2.05,1.52,1.52);
     if(Math.random()<.45)place(z, L===0?1:-1, 'drink');
     nextZ=z+10.4+Math.max(16,gap*0.75);
   }else if(r<.34){
     var open=(Math.random()*3|0)-1;
     for(var L=-1;L<=1;L++)if(L!==open)place(z,L,'drink');
-    seedChain(z,open,5,0.9,0.45,0.45);
+    seedChain(z,open,5,1.85,0.45,0.45);
   }else if(r<.48){
     var L=(Math.random()*3|0)-1;
     place(z,L,'fries');
-    seedChain(z,L,3,0.85,0.45,0.45);
+    seedChain(z,L,3,1.7,0.45,0.45);
     if(Math.random()<.5)place(z,((L+2)%3)-1,'loopy');
   }else if(r<.64){
     var L=(Math.random()*3|0)-1;
     place(z,L,'loopy');
-    seedChain(z,L,3,0.85,0.95,0.95);
+    seedChain(z,L,3,1.55,0.88,0.88);
     if(Math.random()<.4)place(z,((L+2)%3)-1,'pops');
   }else if(r<.78){
     var L=(Math.random()*3|0)-1;
     place(z,L,'pops');
-    if(Math.random()<.5)seedChain(z,((L+1)%3)-1,4,0.9,0.45,0.45);
+    if(Math.random()<.5)seedChain(z,((L+1)%3)-1,4,1.85,0.45,0.45);
   }else{
     var L=(Math.random()*3|0)-1;
     place(z,L, Math.random()<.5?'drink':'fries');
-    seedChain(z+gap*0.35, -L||(Math.random()<.5?1:-1), 5, 0.9, 0.45, 0.45);
+    seedChain(z+gap*0.35, -L||(Math.random()<.5?1:-1), 5, 1.85, 0.45, 0.45);
   }
 }
 function place(z,lane,kind){
@@ -242,12 +242,13 @@ function place(z,lane,kind){
 
 /* hit profiles: low jump, tall lane-change, arch roll */
 function profile(kind){
-  if(kind==='loopy')return {shape:'low',h:0.82,w:1.16};
-  if(kind==='pops')return {shape:'low',h:0.90,w:1.16};
-  if(kind==='drink')return {shape:'tall',h:2.85,w:1.08};
-  if(kind==='fries')return {shape:'arch',h:2.45,w:1.20,gap:0.82};
-  if(kind==='train')return {shape:'platform',h:1.08,w:1.16};
-  return {shape:'low',h:0.8,w:1.0};
+  // h/w/gap are hit boxes; vw/vh are on-screen size so props sit inside one lane
+  if(kind==='loopy')return {shape:'low',h:0.82,w:1.16,vw:0.86,vh:0.70};
+  if(kind==='pops')return {shape:'low',h:0.90,w:1.16,vw:0.88,vh:0.76};
+  if(kind==='drink')return {shape:'tall',h:2.85,w:1.08,vw:0.80,vh:2.62};
+  if(kind==='fries')return {shape:'arch',h:2.45,w:1.20,gap:0.82,vw:0.94,vh:2.18};
+  if(kind==='train')return {shape:'platform',h:1.08,w:1.16,vw:0.90,vh:1.08};
+  return {shape:'low',h:0.8,w:1.0,vw:0.8,vh:0.8};
 }
 
 function playerBox(){
@@ -437,7 +438,10 @@ function drawRoad(){
   for(var i=segs;i>=0;i--){
     var z0=NEAR+(DRAW_FAR-NEAR)*(i+1)/segs;
     var z1=NEAR+(DRAW_FAR-NEAR)*i/segs;
-    if(z0>FAR+8)continue;
+    if(z0>FAR*1.05)continue;
+    var zMid=(z0+z1)*0.5;
+    var farFade=zMid<FAR*0.58?1:Math.max(0,1-Math.pow((zMid-FAR*0.58)/(FAR*0.42),1.15));
+    ctx.globalAlpha=farFade;
     // dark grooves between the three tracks — no grassy shoulder
     ctx.fillStyle=(i%2===0)?'#6a5818':'#5a4a14';
     trap(-bed,bed,z0,z1);ctx.fill();
@@ -447,13 +451,22 @@ function drawRoad(){
       ctx.fillStyle=stripe?'#e8c94a':'#d6b536';
       trap(cx-halfLane,cx+halfLane,z0,z1);ctx.fill();
     }
+    ctx.globalAlpha=1;
   }
-  // let the track end a little short of the horizon instead of a grassy vanishing wedge
-  var farZ=Math.min(DRAW_FAR,FAR+4),Lp=proj(-bed,0,farZ),Rp=proj(bed,0,farZ);
-  if(Lp.y>horizon+2){
-    ctx.fillStyle='#5a4a14';
-    ctx.beginPath();ctx.moveTo(Lp.x,Lp.y);ctx.lineTo(Rp.x,Rp.y);
-    ctx.lineTo(W/2,horizon+2);ctx.closePath();ctx.fill();
+  // blunt, faded cap just short of the horizon — no sharp brown triangle
+  var capZ=FAR*0.92,tipZ=FAR*1.04;
+  var Lp=proj(-bed,0,capZ),Rp=proj(bed,0,capZ);
+  var tipY=Math.max(horizon+10, proj(0,0,tipZ).y);
+  var tipW=Math.max(6,(Rp.x-Lp.x)*0.22);
+  if(Lp.y>tipY+4){
+    ctx.save();
+    ctx.globalAlpha=0.4;
+    ctx.fillStyle='#6a5818';
+    ctx.beginPath();
+    ctx.moveTo(Lp.x,Lp.y);ctx.lineTo(Rp.x,Rp.y);
+    ctx.lineTo(W/2+tipW,tipY);ctx.lineTo(W/2-tipW,tipY);
+    ctx.closePath();ctx.fill();
+    ctx.restore();
   }
   var yN=proj(0,0,NEAR).y;
   if(yN<H){
@@ -557,15 +570,17 @@ function drawObj(o){
   if(o.typ==='coin'){
     var wy=o.wy!=null?o.wy:(o._above?0.95:0.45);
     var p=proj(lx,wy,rel);
-    var sz=Math.max(16,0.52*p.s);
+    var sy=focal/depthZ(rel,PERSP);
+    // ~30% smaller than v15; mid/far jars also ease with vertical perspective
+    var sz=Math.max(8,0.36*(p.s*0.62+sy*0.38));
     var im=ready(IM[o.kind])?IM[o.kind]:(ready(IM.coin)?IM.coin:null);
     if(im){
       ctx.save();
-      ctx.globalAlpha=fade*0.5;
-      ctx.fillStyle='#ffe27a';
-      ctx.beginPath();ctx.ellipse(p.x,p.y+sz*0.08,sz*0.38,sz*0.16,0,0,6.2832);ctx.fill();
+      ctx.globalAlpha=fade*0.35;
+      ctx.fillStyle='#000';
+      ctx.beginPath();ctx.ellipse(p.x,p.y+sz*0.06,sz*0.30,sz*0.12,0,0,6.2832);ctx.fill();
       ctx.restore();
-      ctx.drawImage(im,p.x-sz/2,p.y-sz/2,sz,sz);
+      ctx.drawImage(im,p.x-sz/2,p.y-sz*0.82,sz,sz);
     }else{
       ctx.fillStyle='#fce404';
       ctx.beginPath();ctx.arc(p.x,p.y,sz*0.42,0,6.2832);ctx.fill();
@@ -575,10 +590,11 @@ function drawObj(o){
   if(o.kind==='train'){drawTrain(o,lx,rel);ctx.restore();return}
   var pr=profile(o.kind);
   var im=IM[o.kind];
-  if(!blitSprite(im,lx,rel,pr.w,pr.h)){
+  var vw=pr.vw||pr.w,vh=pr.vh||pr.h;
+  if(!blitSprite(im,lx,rel,vw,vh)){
     // fallback box if a sprite is still loading
-    var gnd=proj(lx,0,rel),top=proj(lx,pr.h,rel);
-    drawPrism(gnd.x,gnd.y,pr.w*gnd.s,Math.max(8,gnd.y-top.y),gnd.s,'#148c44','#0b4e28','#fce404',{depth:0.4});
+    var gnd=proj(lx,0,rel),top=proj(lx,vh,rel);
+    drawPrism(gnd.x,gnd.y,vw*gnd.s,Math.max(8,gnd.y-top.y),gnd.s,'#148c44','#0b4e28','#fce404',{depth:0.4});
   }
   ctx.restore();
 }
@@ -597,7 +613,7 @@ function drawTrain(o,lx,rel){
     var z0=rel+i*carLen,z1=rel+(i+1)*carLen-gap;
     if(z1<1.2||z0>FAR)continue;
     if(z0<1.2)z0=1.2;
-    var hw=pr.w*0.5,hh=pr.h;
+    var hw=(pr.vw||pr.w)*0.5,hh=pr.vh||pr.h;
     var l0=proj(lx-hw,0,z0),r0=proj(lx+hw,0,z0);
     var l1=proj(lx-hw,0,z1),r1=proj(lx+hw,0,z1);
     var l0t=proj(lx-hw,hh,z0),r0t=proj(lx+hw,hh,z0);
@@ -632,7 +648,7 @@ function drawTrain(o,lx,rel){
     ctx.beginPath();ctx.ellipse(r0.x-g0.s*0.08,r0.y-g0.s*0.04,g0.s*0.1,g0.s*0.07,0,0,6.2832);ctx.fill();
   }
   // clay crate face at the near end
-  blitSprite(IM.train,lx,rel,pr.w*1.02,pr.h*1.08,{noshadow:true});
+  blitSprite(IM.train,lx,rel,(pr.vw||pr.w)*1.02,(pr.vh||pr.h),{noshadow:true});
 }
 
 /* -------- potato, drawn from behind with Q clay sprites -------- */
@@ -667,7 +683,7 @@ function drawPlayer(){
     sy=1-0.08*k;sx=1+0.05*k;
   }
   if(crashing){rot=player.tilt;sy=0.9;sx=1.06}
-  drawShadow(gnd.x,gnd.y,gnd.s*(player.state==='roll'?0.7:1),0.55);
+  drawShadow(gnd.x,gnd.y+Math.max(1,gnd.s*0.02),gnd.s*(player.state==='roll'?0.62:0.90),0.40);
   ctx.save();
   ctx.translate(feet.x,feet.y-bounce);
   ctx.rotate(rot);
