@@ -39,10 +39,10 @@ function L(){
   var t=1-Math.exp(-Math.max(0,money)/700);
   return {
     fryers:3,
-    spawn:5.8-t*2.0,
+    spawn:7.0-t*3.3,
     patience:Math.max(28,40-t*12),
-    cook:4.0,
-    burn:7.75,
+    cook:3.2,
+    burn:8.2,
     combo:0.18+t*0.5,
     drink:1.6
   };
@@ -358,10 +358,11 @@ function resetRound(){
 
 function buildStations(){
   elRaws.innerHTML=FOODS.map(function(k){
-    return '<button class="cell st raw" data-food="'+k+'" type="button">'+icon(FOOD[k].bin)+'<span>'+FOOD[k].name+'</span></button>';
+    return '<button class="cell st raw" data-food="'+k+'" type="button" aria-label="'+FOOD[k].name+'">'+icon(FOOD[k].bin)+'</button>';
   }).join('');
   elFlavs.innerHTML=FLAVS.map(function(k){
-    return '<button class="cell st flav" data-flav="'+k+'" type="button">'+icon(FLAV[k].img)+'<span>'+({onion:'洋蔥',bbq:'BBQ',cheese:'起司',chili:'香辣'}[k]||FLAV[k].name)+'</span></button>';
+    var lab=({onion:'洋蔥',bbq:'BBQ',cheese:'起司',chili:'香辣'}[k]||FLAV[k].name);
+    return '<button class="cell st flav flav-'+k+'" data-flav="'+k+'" type="button" aria-label="'+lab+'">'+icon(FLAV[k].img)+'</button>';
   }).join('');
   [].forEach.call(elRaws.querySelectorAll('.raw'),function(btn){
     btn.addEventListener('click',function(){startFry(btn.getAttribute('data-food'))});
@@ -390,6 +391,7 @@ function tapFryer(i){
     var slot=-1;for(var p=0;p<plates.length;p++)if(!plates[p]){slot=p;break}
     if(slot<0){toast('待調味區滿了');return}
     plates[slot]={id:nextId(),type:f.food,flavor:null,shaking:0};
+    sel=plates[slot].id;
     f.food=null;f.t=0;f.state='empty';f.readySfx=false;f.warnSfx=false;
     syncSizzle();
     render();return;
@@ -415,7 +417,9 @@ function pickFlav(k){
     }
   }
   if(slot<0){toast('先把炸好的放到待調味紙杯');return}
-  plates[slot].flavor=k;plates[slot].shaking=0.55;
+  var serveSlot=-1;for(var s=0;s<serves.length;s++)if(!serves[s]){serveSlot=s;break}
+  if(serveSlot<0){toast('出餐區滿了');return}
+  plates[slot].flavor=k;plates[slot].shaking=0.32;
   sfxPowder();
   render();
 }
@@ -538,6 +542,19 @@ function addMoney(n){
   elMoney.textContent='$'+money;
 }
 
+
+function waitingPlateIndex(){
+  if(sel!=null){
+    for(var i=0;i<plates.length;i++){
+      if(plates[i]&&plates[i].id===sel&&!plates[i].flavor&&!plates[i].shaking)return i;
+    }
+  }
+  for(var i=0;i<plates.length;i++){
+    if(plates[i]&&!plates[i].flavor&&!plates[i].shaking)return i;
+  }
+  return -1;
+}
+
 function toast(m){toastMsg=m;toastT=1.15}
 
 function spawnCust(instant){
@@ -627,7 +644,7 @@ function render(){
       c.order.forEach(function(o){
         if(o.type==='drink'){
           var dk=drinkOf(o);
-          html+='<span class="need drink-need'+(o.done?' done':'')+'">'+icon(dk.img)+'<em class="dlab">'+dk.name+'</em></span>';
+          html+='<span class="need drink-need drink-'+dk.id+(o.done?' done':'')+'">'+icon(dk.img)+'<em class="dlab">'+dk.name+'</em></span>';
         }else{
           var lab=o.flavor&&FLAV[o.flavor]?FLAV[o.flavor].short:FOOD[o.type].name;
           html+='<span class="need food-need'+(o.done?' done':'')+'">'+icon(FOOD[o.type].img)+(o.flavor?icon(FLAV[o.flavor].img,'flav'):'')+'<em class="dlab">'+lab+'</em></span>';
@@ -657,10 +674,16 @@ function render(){
     });
   }
 
-  function slotHtml(it,kind,i,lab){
+  var waitI=waitingPlateIndex();
+  var needFlav=waitI>=0;
+  if(elFlavs)elFlavs.classList.toggle('need-flav',needFlav);
+  if(elPlates)elPlates.classList.toggle('need-flav',needFlav);
+  if(elServes)elServes.classList.add('serve-col');
+  function slotHtml(it,kind,i,extra){
     var busy=it&&it.shaking>0?' busy':'';
     var flavCls=it&&it.flavor?' flav-'+it.flavor:'';
     var filled=it?' filled':'';
+    var waitCls=(kind==='plate'&&i===waitI)?' wait-flav':'';
     var dish='<img class="dish empty-cup" src="'+IMG+'cup-empty.webp" alt="" draggable="false">';
     var sprinkles='';
     if(it&&it.shaking>0){
@@ -669,17 +692,24 @@ function render(){
       sprinkles+='</span>';
     }
     var hold=it?('<div class="hold">'+itemHtml(it,it.id===sel?'picked':'')+sprinkles+'</div>'):'';
-    return '<button class="cell slot '+kind+busy+flavCls+filled+'" data-kind="'+kind+'" data-i="'+i+'" type="button">'+dish+hold+'<span class="plab">'+lab+'</span></button>';
+    var arrow=(kind==='plate'&&i===waitI)?'<i class="flav-arrow" aria-hidden="true"></i>':'';
+    var lab=kind==='plate'?(it?(it.shaking>0?'調味中':'選粉'):''):(it?'':'');
+    return '<button class="cell slot '+kind+busy+flavCls+filled+waitCls+(extra||'')+'" data-kind="'+kind+'" data-i="'+i+'" type="button" aria-label="'+(kind==='plate'?'待調味':'出餐')+'">'+dish+hold+arrow+'</button>';
   }
   elPlates.innerHTML=plates.map(function(it,i){
-    var lab=!it?'待調味':(it.shaking>0?'調味中':(it.flavor?'好了':'選粉'));
-    return slotHtml(it,'plate',i,lab);
+    return slotHtml(it,'plate',i,'');
   }).join('');
   elServes.innerHTML=serves.map(function(it,i){
-    return slotHtml(it,'serve',i,it?'出餐':'');
+    return slotHtml(it,'serve',i,'');
   }).join('');
   [].forEach.call((elPlates&&elPlates.querySelectorAll('.item'))||[],function(el){
     bindItem(el,+el.getAttribute('data-id'));
+  });
+  [].forEach.call((elPlates&&elPlates.querySelectorAll('.slot.plate'))||[],function(btn){
+    btn.addEventListener('click',function(){
+      var i=+btn.getAttribute('data-i');
+      if(plates[i]&&!plates[i].flavor&&!plates[i].shaking){sel=plates[i].id;render();}
+    });
   });
   [].forEach.call((elServes&&elServes.querySelectorAll('.item'))||[],function(el){
     bindItem(el,+el.getAttribute('data-id'));
@@ -705,9 +735,9 @@ function render(){
     var kind=m.kind||DRINK_IDS[i];
     var dk=DRINKS[kind];
     var fillPct=m.t<0?0:Math.min(1,m.t/cfg.drink);
-    var lab=m.cup?'點杯':(m.t>=0?'裝杯中':dk.name);
-    var cup=m.cup?'<img class="cup-out item'+(m.cup.id===sel?' picked':'')+'" data-id="'+m.cup.id+'" src="'+drinkOf(m.cup).img+'" alt="" draggable="false">':'';
-    return '<button class="cell drink-eq kind-'+kind+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button"><img class="art" src="'+dk.machine+'" alt="" draggable="false"><b class="mlab">'+dk.name+'</b><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'<span class="plab">'+lab+'</span></button>';
+    var st=m.cup?'ready':(m.t>=0?'busy':'idle');
+    var cup=m.cup?'<img class="cup-out item'+(m.cup.id===sel?' picked':'')+'" data-id="'+m.cup.id+'" src="'+drinkOf(m.cup).img+'" alt="" draggable="false">':'<img class="cup-badge" src="'+dk.img+'" alt="" draggable="false">';
+    return '<button class="cell drink-eq kind-'+kind+' is-'+st+(m.t>=0?' busy':'')+'" data-i="'+i+'" type="button" aria-label="'+dk.name+'"><img class="art" src="'+dk.machine+'" alt="" draggable="false"><i class="drink-fill" style="height:'+(fillPct*22)+'px"></i>'+cup+'</button>';
   }).join('');
   [].forEach.call(elDrinks.querySelectorAll('.drink-eq'),function(btn){
     btn.addEventListener('click',function(){takeDrink(+btn.getAttribute('data-i'))});
@@ -897,6 +927,7 @@ window.PCShop={
     if(fryers[1])fryers[1].t=1.8;
     if(fryers[2])fryers[2].t=1.4;
     plates[0]={id:nextId(),type:'fries',flavor:null,shaking:0};
+    sel=plates[0].id;
     serves[0]={id:nextId(),type:'loopy',flavor:'cheese'};
     drinks[0].cup={id:nextId(),type:'drink',drink:'cola',flavor:null};
     drinks[1].cup={id:nextId(),type:'drink',drink:'sprite',flavor:null};
