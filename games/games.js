@@ -31,10 +31,10 @@ function loadImg(src){
 }
 var zoomGuarded=false;
 function isTapControl(el){
-  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.hud-mute,.runback,.tdbtn,.tdpan,.td-spd,.td-next'));
+  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.hud-mute,.runback,.tdbtn,.tdpan,.td-spd,.td-next,.pbtn,.pinpads'));
 }
 function isHudControl(el){
-  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.qpads,.kpads,.karthud,.overlay,.shop-tophud,.hud-mute,.quest-mute,.kart-mute,.tdbtn,.tdpan,.tdhud,.td-spd,.td-next'));
+  return !!(el&&el.closest&&el.closest('button,a,input,select,textarea,label,.btn,.gcard,.cell,.fryer,.slot,.st,.drink-eq,.trash-eq,.cust,.mcard,.item,.qbtn,.kbtn,.kart-item,.qpads,.kpads,.karthud,.overlay,.shop-tophud,.hud-mute,.quest-mute,.kart-mute,.tdbtn,.tdpan,.tdhud,.td-spd,.td-next,.pbtn,.pinpads,.pinhud'));
 }
 function guardZoom(){
   if(zoomGuarded)return;
@@ -265,6 +265,18 @@ var audio=(function(){
       var hook=[[0,392.00],[2,523.25],[4,587.33],[6,659.25],[8,587.33],[10,523.25],[12,659.25],[14,783.99]];
       for(var k=0;k<hook.length;k++)if(hook[k][0]===i)lead(t,hook[k][1],bus,0.055,0.12);
       if(i===0)chord(t,[261.63,329.63,392.00],bus,0.03);
+    }},
+    pinball:{bpm:140,fn:function(s,t,bus){
+      var i=s%16;
+      var roots=[130.81,146.83,110.00,164.81];
+      var bar=(s>>4)%4;
+      if(i===0||i===4||i===8||i===12)kick(t,bus,0.2);
+      if(i===4||i===12)snare(t,bus,0.07);
+      if(i===2||i===6||i===10||i===14)hat(t,bus,0.03);
+      if(i%2===0)bass(t,roots[bar]*(i%4===2?1.5:1),bus,0.15,0.12);
+      var hook=[[0,523.25],[2,659.25],[4,783.99],[6,659.25],[8,587.33],[10,783.99],[12,880.00],[14,783.99]];
+      for(var k=0;k<hook.length;k++)if(hook[k][0]===i)lead(t,hook[k][1],bus,0.06,0.11);
+      if(i===0)chord(t,[261.63,329.63,392.00],bus,0.028);
     }}
   };
 
@@ -437,6 +449,43 @@ var audio=(function(){
         oscTone('triangle',392.00,523.25,t,0.12,0.12,sfxGain);
         oscTone('triangle',523.25,659.25,t+0.1,0.14,0.12,sfxGain);
         kick(t,sfxGain,0.16);
+        break;
+      case 'plunger':
+        (function(){
+          var p=Math.max(0,Math.min(1,opts.power||0));
+          oscTone('triangle',160+p*220,90+p*40,t,0.07,0.045,sfxGain,{type:'lowpass',freq:900});
+        })();
+        break;
+      case 'launch':
+        kick(t,sfxGain,0.2);
+        noiseBurst(t,0.1,0.08,sfxGain,{type:'bandpass',freq:1400,q:0.7});
+        oscTone('sawtooth',180,520,t,0.16,0.08,sfxGain,{type:'lowpass',freq:1800});
+        break;
+      case 'flipper':
+        noiseBurst(t,0.04,0.05,sfxGain,{type:'highpass',freq:1200});
+        oscTone('triangle',240,140,t,0.06,0.07,sfxGain,{type:'lowpass',freq:900});
+        break;
+      case 'bumper':
+        (function(){
+          var c=Math.max(1,opts.combo||1);
+          var f=659.25*Math.pow(2,Math.min(c-1,8)*1.2/12);
+          oscTone('triangle',f,f*1.5,t,0.1,0.16,sfxGain);
+          oscTone('sine',f*2,f*2.2,t+0.04,0.12,0.08,sfxGain,{type:'lowpass',freq:3200});
+        })();
+        break;
+      case 'sling':
+        noiseBurst(t,0.07,0.09,sfxGain,{type:'bandpass',freq:1600,q:0.7});
+        oscTone('square',220,110,t,0.07,0.05,sfxGain,{type:'lowpass',freq:800});
+        break;
+      case 'gate':
+        oscTone('sine',784,784,t,0.08,0.1,sfxGain);
+        oscTone('sine',1175,1175,t+0.06,0.1,0.08,sfxGain);
+        break;
+      case 'mult':
+        oscTone('triangle',523.25,523.25,t,0.1,0.16,sfxGain);
+        oscTone('triangle',659.25,659.25,t+0.09,0.12,0.16,sfxGain);
+        oscTone('sine',783.99,1174.66,t+0.18,0.28,0.16,sfxGain);
+        noiseBurst(t+0.06,0.16,0.05,sfxGain,{type:'highpass',freq:2000});
         break;
       default:break;
     }
