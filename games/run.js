@@ -76,6 +76,8 @@ var sx=0,sy=0,sAt=0,swiping=false;
 function bindLock(el,type,fn){el.addEventListener(type,fn,{passive:false})}
 function preventPage(e){
   if(ov&&!ov.hidden)return;
+  /* allow the 選單 link (and any HUD control) to receive the tap */
+  if(e.target&&e.target.closest&&e.target.closest('a,button,.runback'))return;
   e.preventDefault();
 }
 bindLock(wrap,'touchstart',preventPage);
