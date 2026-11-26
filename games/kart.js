@@ -820,6 +820,8 @@ function lerpC(a,b,t){
   lerpCache[key]=hit;return hit;
 }
 function paintSky(c){
+  c.fillStyle='#8ec8ef';
+  c.fillRect(0,0,W,H);
   if(ready(IM.sky)){
     var im=IM.sky, hf=0.90, destH=CY/hf, destW=destH*(im.naturalWidth/Math.max(1,im.naturalHeight));
     if(destW<W*1.2)destW=W*1.2;
@@ -863,10 +865,11 @@ function rebuildBg(){
 }
 function blitBg(){
   if(bgDirty||!bgCache)rebuildBg();
-  if(!bgCache)return;
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0);
-  ctx.drawImage(bgCache,0,0);
+  ctx.fillStyle='#8ec8ef';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  if(bgCache)ctx.drawImage(bgCache,0,0,canvas.width,canvas.height);
   ctx.restore();
 }
 function cloud(x,y,s,a){
@@ -1024,19 +1027,26 @@ function drawWorldSprites(){
       if(sp.kind==='barrel')sw=uw*0.30;
       if(sp.kind==='crate')sw=uw*0.38;
       if(sp.kind==='spud')sw=uw*0.34;
-      /* keep boost/oil pads from filling the control bar at the bottom */
+      /* near-plane: objects closer than the camera-to-player gap explode into
+         full-screen "ghosts" as you pass them. Cull / fade before that. */
       if((sp.kind==='boost'||sp.kind==='oil')&&rel<1200)continue;
+      if((sp.kind==='box'||sp.kind==='barrel'||sp.kind==='crate'||sp.kind==='spud'||sp.kind==='arch')&&rel<760)continue;
+      if(rel<460)continue;
       sh=spriteH(sp.kind,sw);
+      if(sw>W*0.95||sh>H*0.85)continue;
       sx=worldSX(sp.x,scale);
       sy=CY-scale*(seg.y-camY)*CY+bounce;
-      /* bob item boxes */
       if(sp.kind==='box'){sy-=sh*0.15+Math.sin(raceT*5+seg.i)*sh*0.08}
       if(sy>H-96&&(sp.kind==='boost'||sp.kind==='oil'))continue;
-      blit(imgOfKind(sp.kind),sx,sy,sw,sh,clip);
+      var fade=spriteFade(rel);
+      if(fade<=0)continue;
+      if(fade<1){ctx.save();ctx.globalAlpha=fade;blit(imgOfKind(sp.kind),sx,sy,sw,sh,clip);ctx.restore()}
+      else blit(imgOfKind(sp.kind),sx,sy,sw,sh,clip);
     }
     /* hazards on this seg */
     for(i=0;i<hazards.length;i++){
       if(segIndex(hazards[i].z)!==seg.i)continue;
+      if(rel<900)continue;
       sw=uw*0.55;sh=spriteH('oil',sw);
       sx=worldSX(hazards[i].x,scale);
       sy=CY-scale*(seg.y-camY)*CY+bounce;
@@ -1064,7 +1074,10 @@ function drawWorldSprites(){
       var r=racers[i];
       if(r===player)continue;
       if(segIndex(r.z)!==seg.i)continue;
-      drawKartAt(r,scale,seg.y,clip,false);
+      var rrel=relZ(r.z,camZ);
+      if(rrel<CAM_OFF*0.72||rrel>SEG*(DRAW+2))continue;
+      var rscale=CAM_D/Math.max(40,rrel);
+      drawKartAt(r,rscale,r.y,clip,false);
     }
   }
   /* player projected at their world z so they sit on the road */
@@ -1094,7 +1107,7 @@ function drawKartAt(r,scale,roadY,clip,isP){
   ctx.beginPath();
   ctx.ellipse(0,-sh*0.035,sw*0.34,sh*0.055,0,0,6.28);
   ctx.fill();
-  if(isP&&r.invulnT>0&&((raceT*16)|0)%2===0)ctx.globalAlpha=0.32;
+  if(isP&&r.invulnT>0)ctx.globalAlpha=0.52+0.38*Math.abs(Math.sin(raceT*9));
   if(ready(im))ctx.drawImage(im,-sw/2,-sh,sw,sh);
   ctx.globalAlpha=1;
   if(r.shieldT>0&&ready(IM.shield)){
@@ -1125,6 +1138,28 @@ function drawSpeedLines(){
   ctx.restore();
 }
 
+function spriteFade(rel){
+  if(rel<460)return 0;
+  if(rel<820)return (rel-460)/360;
+  return 1;
+}
+function drawHint(){
+  if(!(state==='count'||(state==='racing'&&raceT<2.5)))return;
+  var a=state==='count'?0.95:Math.max(0,1-raceT/2.5);
+  if(a<=0.02)return;
+  ctx.save();
+  ctx.globalAlpha=a;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='800 '+Math.max(13,Math.floor(H*0.026))+'px -apple-system,BlinkMacSystemFont,"PingFang TC",sans-serif';
+  ctx.lineWidth=5;
+  ctx.strokeStyle='rgba(0,0,0,0.45)';
+  ctx.fillStyle='#fffbe8';
+  var msg='車子會自己加速，按住 ◀ ▶ 左右移動';
+  var y=H*0.78;
+  ctx.strokeText(msg,CX,y);
+  ctx.fillText(msg,CX,y);
+  ctx.restore();
+}
 function drawCount(){
   if(state==='count'&&countT>0){
     var n=countT>1?3:countT>0.5?2:countT>0?1:0;
@@ -1161,6 +1196,13 @@ function drawCount(){
 
 function draw(){
   size();
+  /* wipe the backing store every frame (device pixels) so Safari cannot keep last-frame pixels */
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.fillStyle='#8ec8ef';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.restore();
+  ctx.setTransform(DPR,0,0,DPR,0,0);
   if(!player){ctx.fillStyle='#8ec8ef';ctx.fillRect(0,0,W,H);return}
   ctx.save();
   if(hurtShake>0){
@@ -1171,6 +1213,7 @@ function draw(){
   drawWorldSprites();
   ctx.restore();
   drawCount();
+  drawHint();
 }
 
 function loop(ts){
@@ -1345,6 +1388,7 @@ buildTrack();
 showBest();
 setMuteUI();
 size();
+canvas.style.background='#8ec8ef';
 preloadAssets();
 try{ensureAudioCtx();ensureNoiseBuf()}catch(e){}
 window.addEventListener('resize',onResize);
