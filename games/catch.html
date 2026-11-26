@@ -9,12 +9,13 @@
 <meta name="description" content="左右滑動接住掉下來的薯條、捲捲薯、雞米花、飲料和風味粉。不限時間，接到燒焦的就結束。非官方小遊戲。">
 <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
-<link rel="stylesheet" href="games.css?v=28">
+<link rel="stylesheet" href="games.css?v=30">
 </head>
 <body class="play catchpage">
 <div class="stagewrap" id="wrap">
 <canvas id="stage" aria-label="接薯條遊戲畫面"></canvas>
 <a class="runback" href="index.html">選單</a>
+<button class="hud-mute" id="muteBtn" type="button" aria-pressed="false" aria-label="音效" title="音效">聲音</button>
 <div class="runhud" id="hud" hidden>
 <span>分數 <b id="score">0</b></span>
 <span>最高 <b id="best">0</b></span>
@@ -32,7 +33,7 @@
 <p class="fine" id="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
 </div>
 </div>
-<script src="games.js?v=3"></script>
-<script src="catch.js?v=3"></script>
+<script src="games.js?v=4"></script>
+<script src="catch.js?v=4"></script>
 </body>
 </html>

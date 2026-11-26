@@ -164,7 +164,7 @@ body.play.runpage .stagewrap{position:absolute;inset:0;width:100vw;width:100dvw;
 body.play.runpage,body.play.runpage .stagewrap,body.play.runpage canvas#stage{touch-action:none;overscroll-behavior:none}
 body.play.runpage canvas#stage{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;margin:0;border:0;border-radius:0}
 body.play.runpage .runback{position:absolute;z-index:40;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));color:#fff;text-decoration:none;font-weight:700;font-size:13px;line-height:1;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.36)}
-body.play.runpage .runhud{position:absolute;z-index:35;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 14px;padding:0 12px 0 72px;box-sizing:border-box;font-size:12px;font-weight:700;color:rgba(255,255,255,.86);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+body.play.runpage .runhud{position:absolute;z-index:35;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 14px;padding:0 72px 0 72px;box-sizing:border-box;font-size:12px;font-weight:700;color:rgba(255,255,255,.86);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
 body.play.runpage .runhud b{color:#fce404;font-weight:800}
 body.play.runpage .runhud[hidden]{display:none!important}
 body.play.runpage .overlay{padding:18px 16px;padding-top:calc(52px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
@@ -212,19 +212,19 @@ body.play.shoppage.playing .hud-pause{display:block}
 /* upper ~40%: street / mall, customers in a row behind the counter */
 .shop-stage .plaza{position:absolute;left:0;right:0;top:0;height:56%;background:url("img/shop/plaza-wide.webp") center 30%/cover no-repeat;pointer-events:none;z-index:0}
 .shop-stage .custs{position:absolute;left:0;right:0;top:calc(52px + env(safe-area-inset-top,0px));bottom:46%;height:auto;z-index:4;padding:0 6px;box-sizing:border-box;pointer-events:none}
-.shop-stage .cust{position:absolute;left:50%;bottom:2%;width:22%;max-width:186px;max-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+.shop-stage .cust{position:absolute;left:50%;bottom:2%;width:18.2%;max-width:none;max-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;pointer-events:auto;cursor:pointer;border:0;background:transparent;padding:0;color:inherit;font:inherit;z-index:2;transition:left .7s ease,transform .7s ease,opacity .35s;transform:translateX(-50%);-webkit-tap-highlight-color:transparent;box-sizing:border-box;overflow:visible}
 .shop-stage .cust.entering{left:94%!important;transform:translateX(-50%) scale(.7);opacity:.8;z-index:1}
 .shop-stage .cust.leaving{opacity:0;transform:translateX(-50%) translateY(10px) scale(.9)}
 .shop-stage .cust.happy-leave{opacity:0;transform:translateX(-50%) translateY(-16px) scale(.9)}
-.shop-stage .cust .bubble{background:#fff;border-radius:16px;padding:6px 7px 7px;width:auto;min-width:0;max-width:100%;max-height:none;overflow:visible;box-shadow:0 3px 0 rgba(0,0,0,.16),0 5px 10px rgba(0,0,0,.14);display:flex;flex-wrap:nowrap;gap:6px;justify-content:center;align-items:center;position:relative;box-sizing:border-box;z-index:3}
+.shop-stage .cust .bubble{background:#fff;border-radius:14px;padding:4px 5px 5px;width:auto;min-width:0;max-width:100%;max-height:none;overflow:visible;box-shadow:0 3px 0 rgba(0,0,0,.16),0 5px 10px rgba(0,0,0,.14);display:flex;flex-wrap:nowrap;gap:4px;justify-content:center;align-items:center;position:relative;box-sizing:border-box;z-index:3}
 .shop-stage .cust .bubble:after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-6px;border:7px solid transparent;border-top-color:#fff;border-bottom-width:0}
-.shop-stage .cust .need{position:relative;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;background:#fbf4e4;border-radius:12px;padding:4px 5px;gap:3px}
-.shop-stage .cust .need img{width:52px;height:52px;object-fit:contain;display:block;max-width:none}
-.shop-stage .cust .need.drink-need img{width:52px;height:52px}
+.shop-stage .cust .need{position:relative;display:inline-flex;flex-direction:row;align-items:center;justify-content:center;background:#fbf4e4;border-radius:10px;padding:3px;gap:2px;flex:none}
+.shop-stage .cust .need img{width:44px;height:44px;object-fit:contain;display:block;max-width:none}
+.shop-stage .cust .need.drink-need img{width:48px;height:48px}
 .shop-stage .cust .need.drink-cola{background:#f3e0d0}
 .shop-stage .cust .need.drink-sprite{background:#d9f5d4}
 .shop-stage .cust .need.drink-tea{background:#f8e3b8}
-.shop-stage .cust .need img.flav{position:static;width:34px;height:34px;margin:0;background:#fff;border-radius:9px;padding:2px;box-shadow:0 0 0 2px rgba(0,0,0,.18),0 1px 0 rgba(0,0,0,.12);flex:none}
+.shop-stage .cust .need img.flav{position:static;width:26px;height:26px;margin:0;background:#fff;border-radius:8px;padding:1px;box-shadow:0 0 0 2px rgba(0,0,0,.18),0 1px 0 rgba(0,0,0,.12);flex:none}
 .shop-stage .cust .need.flav-onion img.flav{box-shadow:0 0 0 2px #cfc4a0,0 1px 0 rgba(0,0,0,.12)}
 .shop-stage .cust .need.flav-bbq img.flav{box-shadow:0 0 0 2px #6b3a18,0 1px 0 rgba(0,0,0,.12)}
 .shop-stage .cust .need.flav-cheese img.flav{box-shadow:0 0 0 2px #ee8416,0 1px 0 rgba(0,0,0,.12)}
@@ -240,7 +240,7 @@ body.play.shoppage.playing .hud-pause{display:block}
 /* lower ~60%: wood body + stainless worktop, 6 perspective columns */
 .shop-stage .counter{position:absolute;left:0;right:0;bottom:0;height:48%;z-index:5;background:url("img/shop/wood.webp") center/cover no-repeat,#8b5a2b;box-shadow:0 -8px 16px rgba(0,0,0,.28);padding:0;display:flex;flex-direction:column;overflow:visible}
 .shop-stage .counter:after{content:"";flex:none;height:14px;background:linear-gradient(#6a3e1c,#4a2a12);box-shadow:0 -2px 0 rgba(255,255,255,.12),0 3px 6px rgba(0,0,0,.35)}
-.shop-stage .counter-deck{flex:1;min-height:0;min-width:0;position:relative;display:grid;grid-template-columns:1.05fr 1.2fr 1.05fr 1.12fr 1.12fr 1.2fr;gap:6px;padding:8px 12px 6px;margin:8px 16px 0;background:url("img/shop/steel-counter.webp") center/cover no-repeat,#8a939a;box-shadow:inset 0 0 0 3px #b7c0c6,inset 0 0 0 7px #6e777e,0 8px 14px rgba(0,0,0,.28);border-radius:8px 8px 0 0;overflow:visible}
+.shop-stage .counter-deck{flex:1;min-height:0;min-width:0;position:relative;display:grid;grid-template-columns:1.05fr 1.2fr 1.05fr 2.24fr 1.2fr;gap:6px;padding:8px 12px 6px;margin:8px 16px 0;background:url("img/shop/steel-counter.webp") center/cover no-repeat,#8a939a;box-shadow:inset 0 0 0 3px #b7c0c6,inset 0 0 0 7px #6e777e,0 8px 14px rgba(0,0,0,.28);border-radius:8px 8px 0 0;overflow:visible}
 
 .shop-stage .col{min-width:0;min-height:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;transform-origin:50% 100%}
 .shop-stage .col-3{justify-content:stretch;gap:3px}
@@ -289,11 +289,13 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .flav img{width:108%;height:108%;object-fit:contain;object-position:center center;position:relative;z-index:1;margin-bottom:0}
 .shop-stage .flav .flav-lab{display:none!important}
 .shop-stage .st span{display:none!important}
-.shop-stage #plates{background:linear-gradient(180deg,rgba(120,90,30,.22),rgba(40,30,12,.12));border-radius:6px;padding:3px}
-.shop-stage #serves{background:linear-gradient(180deg,rgba(20,120,50,.26),rgba(10,40,20,.12));border-radius:6px;padding:3px}
+.shop-stage .col-trays{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:repeat(3,1fr);gap:3px;align-content:stretch;padding:3px;min-width:0;min-height:0;height:100%;background:linear-gradient(180deg,rgba(90,70,30,.24),rgba(16,40,28,.16));border-radius:6px;overflow:visible}
+.shop-stage .col-trays > .cell{width:100%;height:100%;min-height:0;transform:none}
 .shop-stage #flavs.need-flav .flav{box-shadow:inset 0 0 0 2px rgba(252,228,4,.85),0 0 8px rgba(252,228,4,.35);animation:jarhint 1.1s ease-in-out infinite}
 @keyframes jarhint{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
-.shop-stage .slot.plate.wait-flav{box-shadow:inset 0 0 0 3px #fce404,0 0 12px rgba(252,228,4,.7);overflow:visible;z-index:4;animation:waitpulse 1s ease-in-out infinite}
+.shop-stage .slot.tray.unseasoned{box-shadow:inset 0 0 0 2px rgba(252,228,4,.5),inset 0 2px 5px rgba(0,0,0,.45)}
+.shop-stage .slot.tray.ready-serve{box-shadow:inset 0 0 0 3px #148c44,inset 0 2px 5px rgba(0,0,0,.35),0 0 8px rgba(20,140,68,.4)}
+.shop-stage .slot.tray.wait-flav{box-shadow:inset 0 0 0 3px #fce404,0 0 12px rgba(252,228,4,.7);overflow:visible;z-index:4;animation:waitpulse 1s ease-in-out infinite}
 @keyframes waitpulse{0%,100%{box-shadow:inset 0 0 0 3px #fce404,0 0 8px rgba(252,228,4,.45)}50%{box-shadow:inset 0 0 0 3px #fff3a8,0 0 16px rgba(252,228,4,.9)}}
 .shop-stage .flav-arrow{position:absolute;left:3px;top:50%;width:0;height:0;margin:0;border:7px solid transparent;border-right-color:#fce404;border-left-width:0;transform:translateY(-50%);z-index:7;filter:drop-shadow(0 1px 2px rgba(0,0,0,.65));animation:arrownudge .7s ease-in-out infinite;pointer-events:none}
 @keyframes arrownudge{0%,100%{transform:translate(0,-50%)}50%{transform:translate(-4px,-50%)}}
@@ -302,7 +304,7 @@ body.play.shoppage.playing .hud-pause{display:block}
 .shop-stage .drink-eq.kind-tea{box-shadow:inset 0 0 0 3px #d49220,inset 0 2px 5px rgba(0,0,0,.45)}
 .shop-stage .drink-eq .mlab,.shop-stage .drink-eq .plab{display:none!important}
 .shop-stage .drink-eq .cup-badge{display:none!important}
-.shop-stage .slot.plate .plab,.shop-stage .slot.serve .plab{display:none!important}
+.shop-stage .slot.tray .plab,.shop-stage .slot.plate .plab,.shop-stage .slot.serve .plab{display:none!important}
 
 .shop-stage .fryer{--cook:1}
 .shop-stage .fryer .art{z-index:1;object-fit:cover;width:122%;height:122%;object-position:70% 48%}
@@ -466,12 +468,19 @@ body.play.catchpage{position:fixed;inset:0;width:100vw;height:100%;height:100dvh
 body.play.catchpage .stagewrap{position:absolute;inset:0;width:100vw;height:100%;height:100dvh;max-width:none;margin:0;border-radius:0;box-shadow:none;align-self:auto;background:#0e5a2c}
 body.play.catchpage,body.play.catchpage .stagewrap,body.play.catchpage canvas#stage{touch-action:none;overscroll-behavior:none}
 body.play.catchpage .runback{position:absolute;z-index:40;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));color:#fff;text-decoration:none;font-weight:700;font-size:13px;line-height:1;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.36)}
-body.play.catchpage .runhud{position:absolute;z-index:35;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 18px;padding:0 12px 0 72px;box-sizing:border-box;font-size:13px;font-weight:700;color:rgba(255,255,255,.9);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
+body.play.catchpage .runhud{position:absolute;z-index:35;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:10px 18px;padding:0 72px 0 72px;box-sizing:border-box;font-size:13px;font-weight:700;color:rgba(255,255,255,.9);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none}
 body.play.catchpage .runhud b{color:#fce404;font-weight:800}
 body.play.catchpage .runhud[hidden]{display:none!important}
 body.play.catchpage .overlay{padding:18px 16px;padding-top:calc(52px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 body.play.catchpage .overlay .fine{flex:none;margin:10px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
 body.play.catchpage .how{max-width:min(520px,92%)}
+
+body.play.runpage .hud-mute,body.play.catchpage .hud-mute{position:absolute;z-index:41;top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;line-height:1;border-radius:99px;padding:7px 11px;cursor:pointer;font-family:inherit;pointer-events:auto;-webkit-tap-highlight-color:transparent}
+body.play.runpage .hud-mute[aria-pressed="true"],body.play.catchpage .hud-mute[aria-pressed="true"]{background:rgba(80,20,20,.7);color:#fce404}
+body.play.matchpage .hud{align-items:center;position:relative;padding-right:16px}
+body.play.matchpage .hud-mute{appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;line-height:1;border-radius:99px;padding:6px 10px;cursor:pointer;font-family:inherit;flex:none}
+body.play.matchpage .hud-mute[aria-pressed="true"]{background:rgba(80,20,20,.7);color:#fce404}
+
 
 /* potato kart — fullscreen racer */
 html.kartpage{height:100%;height:100dvh;width:100%;width:100dvw;overflow:hidden;overscroll-behavior:none;touch-action:none}

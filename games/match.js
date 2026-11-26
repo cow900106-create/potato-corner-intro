@@ -38,6 +38,7 @@ function flip(btn,f){
   if(!run||lock||btn.classList.contains('on')||btn.classList.contains('ok'))return;
   btn.classList.add('on');
   open.push({btn:btn,f:f});
+  if(G.audio)G.audio.play('flip');
   if(open.length<2)return;
   lock=true;
   var a=open[0],b=open[1];
@@ -49,10 +50,12 @@ function flip(btn,f){
     setScore(score+pts);
     leftPairs-=1;
     lock=false;
+    if(G.audio)G.audio.play('match');
     if(navigator.vibrate)try{navigator.vibrate(25)}catch(_){}
     if(leftPairs<=0)end(true);
   }else{
     combo=0;
+    if(G.audio)G.audio.play('miss');
     setTimeout(function(){
       a.btn.classList.remove('on');b.btn.classList.remove('on');
       lock=false;
@@ -69,12 +72,14 @@ function loop(ts){
 }
 function start(){
   setScore(0);left=60;run=true;ov.hidden=true;elTime.textContent=60;
+  if(G.audio){G.audio.unlock();G.audio.play('start');G.audio.startBgm('match')}
   build();
   last=performance.now();raf=requestAnimationFrame(loop);
 }
 function end(cleared){
   if(!run&&!cleared)return;
   run=false;cancelAnimationFrame(raf);
+  if(G.audio){G.audio.stopBgm();G.audio.play(cleared?'win':'over')}
   var bonus=0;
   if(cleared){bonus=Math.max(0,Math.ceil(left))*10;setScore(score+bonus)}
   var nb=score>best;if(nb){best=score;G.setBest(KEY,best);elBest.textContent=best}
@@ -83,5 +88,12 @@ function end(cleared){
   go.textContent='再玩一次';ov.hidden=false;
 }
 go.addEventListener('click',start);
-d.addEventListener('visibilitychange',function(){if(d.hidden&&run){run=false;cancelAnimationFrame(raf);ovT.textContent='暫停中';ovS.textContent='回到頁面後再開始';go.textContent='重新開始';ov.hidden=false}});
+d.addEventListener('visibilitychange',function(){if(d.hidden&&run){run=false;cancelAnimationFrame(raf);if(G.audio)G.audio.stopBgm();ovT.textContent='暫停中';ovS.textContent='回到頁面後再開始';go.textContent='重新開始';ov.hidden=false}});
+if(G.audio)G.audio.configure({key:'pcGameMatchMuted',button:d.getElementById('muteBtn')});
+window.PCMatch={
+  start:start,
+  end:end,
+  audio:function(){return G.audio?G.audio.info():null},
+  info:function(){return {run:run,score:score,left:left,leftPairs:leftPairs}}
+};
 })();

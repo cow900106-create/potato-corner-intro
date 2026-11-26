@@ -244,6 +244,7 @@ function loop(ts){
         if(it.typ.burnt){
           flash=1;bounce=.7;face='shock';
           pop(it.x,hit.y-8,'燒焦了','#ffe0c8');
+          if(G.audio){G.audio.stopBgm();G.audio.play('burn')}
           if(navigator.vibrate)try{navigator.vibrate(80)}catch(_){}
           items.splice(i,1);
           overT=.38;
@@ -252,6 +253,7 @@ function loop(ts){
           bounce=.55;face='happy';
           pop(it.x,hit.y-6,'+'+it.typ.pts+' '+it.typ.lab,'#fce404');
           items.splice(i,1);
+          if(G.audio)G.audio.play('catch');
         }
       }else if(it.y>H+it.s){items.splice(i,1)}
     }
@@ -266,11 +268,13 @@ function start(){
   items=[];pops=[];setScore(0);spawn=.4;run=true;frozen=false;flash=0;bounce=0;overT=0;face='idle';
   var how=d.getElementById('how');if(how)how.hidden=false;
   ov.hidden=true;if(elHud)elHud.hidden=false;
+  if(G.audio){G.audio.unlock();G.audio.play('start');G.audio.startBgm('catch')}
   last=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
 }
 
 function showOver(){
   run=false;cancelAnimationFrame(raf);draw();
+  if(G.audio){G.audio.stopBgm();G.audio.play('over')}
   var nb=score>best;if(nb){best=score;G.setBest(KEY,best);if(elBest)elBest.textContent=best}
   ovT.textContent='接到燒焦的了';
   ovS.innerHTML='你的分數 <span class="big">'+score+'</span><br>'+(nb?'新的最高分！':'最高分 '+best)+G.pickHtml();
@@ -284,9 +288,11 @@ function endNow(){
 }
 
 go.addEventListener('click',start);
+if(G.audio)G.audio.configure({key:'pcGameCatchMuted',button:d.getElementById('muteBtn')});
 d.addEventListener('visibilitychange',function(){
   if(d.hidden&&run&&overT<=0){
     run=false;cancelAnimationFrame(raf);
+    if(G.audio)G.audio.stopBgm();
     ovT.textContent='暫停中';
     ovS.textContent='回到頁面後再開始';
     go.textContent='重新開始';
@@ -324,6 +330,7 @@ window.PCCatch={
   freeze:function(on){frozen=!!on;if(on)draw()},
   setScore:setScore,
   setX:function(n){var half=charSize().w/2;box.x=Math.min(Math.max(n*W,half),W-half)},
-  info:function(){return {run:run,score:score,best:best,items:items.length,frozen:frozen,overT:overT}}
+  info:function(){return {run:run,score:score,best:best,items:items.length,frozen:frozen,overT:overT}},
+  audio:function(){return G.audio?G.audio.info():null}
 };
 })();
