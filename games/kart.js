@@ -60,6 +60,7 @@ var noiseBuf=null, noiseQueued=false;
 /* ---------- audio ---------- */
 var actx=null, master=null, unlocked=false, muted=false;
 var eng={src:null,gain:null,filt:null,noise:null,ng:null,lfo:null};
+var bgm={src:null}, bgmGain=null, bgmBuf=null, bgmWanted=false, bgmReady=null;
 try{muted=localStorage.getItem(MUTE_KEY)==='1'}catch(e){}
 
 function ensureAudioCtx(){
@@ -80,6 +81,7 @@ function unlockAudio(){
   if(actx.state==='suspended')actx.resume();
   unlocked=true;
   ensureNoiseBuf();
+  ensureBgm();
   return true;
 }
 function ensureNoiseBuf(){
@@ -103,9 +105,12 @@ function setMuted(on){
   setMuteUI();
   if(master&&actx){
     var t=actx.currentTime;
+    var vol=muted?0:0.9;
     master.gain.cancelScheduledValues(t);
-    master.gain.setValueAtTime(muted?0:0.9,t);
+    master.gain.value=vol;
+    master.gain.setValueAtTime(vol,t);
   }
+  setBgmLevel();
 }
 function beep(type,freq,dur,gain,slide,q){
   if(!unlockAudio()||!master)return;
@@ -194,6 +199,157 @@ function tickEngine(){
     eng.gain.gain.setTargetAtTime(vol,t,0.08);
     if(eng.ng)eng.ng.gain.setTargetAtTime(0.02+p*0.05,t,0.1);
   }catch(e){}
+}
+
+/* ---------- bgm (light racing loop, under sfx / engine) ---------- */
+var BGM_VOL=0.20;
+function bgmLive(){return !!(bgm&&bgm.src)}
+function ensureBgm(){
+  if(bgmBuf)return Promise.resolve(bgmBuf);
+  if(bgmReady)return bgmReady;
+  if(!ensureAudioCtx())return Promise.resolve(null);
+  bgmReady=buildBgmBuf().then(function(buf){bgmBuf=buf;return buf}).catch(function(){bgmReady=null;return null});
+  return bgmReady;
+}
+function mkNoise(ctx,sec){
+  var n=ctx.createBuffer(1,Math.max(1,Math.floor(ctx.sampleRate*sec)),ctx.sampleRate);
+  var d=n.getChannelData(0),i;
+  for(i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  return n;
+}
+function tone(ctx,dest,type,freq,t,dur,gain,slide){
+  if(t<0)t=0;
+  var o=ctx.createOscillator(), g=ctx.createGain();
+  o.type=type;
+  o.frequency.setValueAtTime(Math.max(20,freq),t);
+  if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,slide),t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.0001,gain),t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g);g.connect(dest);
+  o.start(t);o.stop(t+dur+0.03);
+}
+function bumpHit(ctx,dest,noise,t,hp,gain,dur){
+  if(!noise)return;
+  var s=ctx.createBufferSource();s.buffer=noise;
+  var f=ctx.createBiquadFilter();f.type='highpass';f.frequency.value=hp;
+  var g=ctx.createGain();
+  g.gain.setValueAtTime(gain,t);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(dest);
+  s.start(t);s.stop(t+dur+0.02);
+}
+function buildBgmBuf(){
+  var Off=window.OfflineAudioContext||window.webkitOfflineAudioContext;
+  if(!Off)return Promise.reject(new Error('no offline'));
+  var sr=actx.sampleRate, bpm=148, beat=60/bpm, bars=4, dur=beat*4*bars;
+  var off=new Off(1,Math.ceil(sr*dur),sr);
+  var dest=off.destination, noise=mkNoise(off,0.2);
+  var i,b,t,step=beat/2;
+  /* four-on-the-floor kick + snare on 2 & 4 + 8th hats */
+  for(i=0;i<16;i++){
+    t=i*beat;
+    tone(off,dest,'sine',150,t,0.13,0.36,52);
+    tone(off,dest,'sine',80,t,0.04,0.1,40);
+    if(i%2===1){
+      bumpHit(off,dest,noise,t,1400,0.18,0.1);
+      tone(off,dest,'triangle',240,t,0.07,0.07,130);
+    }
+    bumpHit(off,dest,noise,t,7000,0.05,0.035);
+    bumpHit(off,dest,noise,t+beat*0.5,7000,0.035,0.03);
+  }
+  /* bass ostinato */
+  var bass=[
+    130.81,130.81,98.00,130.81,164.81,130.81,98.00,130.81,
+    87.31,87.31,130.81,87.31,110.00,87.31,130.81,87.31,
+    98.00,98.00,146.83,98.00,123.47,98.00,146.83,87.31,
+    130.81,98.00,164.81,130.81,98.00,164.81,146.83,130.81
+  ];
+  for(i=0;i<bass.length;i++){
+    t=i*step;
+    tone(off,dest,'triangle',bass[i],t,step*0.92,0.16);
+    tone(off,dest,'sine',bass[i]*0.5,t,step*0.9,0.07);
+  }
+  /* bright lead hook */
+  var lead=[
+    329.63,392.00,523.25,392.00,329.63,0,392.00,523.25,
+    349.23,440.00,523.25,440.00,349.23,0,440.00,587.33,
+    392.00,493.88,587.33,493.88,392.00,440.00,493.88,587.33,
+    523.25,392.00,329.63,392.00,523.25,0,329.63,261.63
+  ];
+  for(i=0;i<lead.length;i++){
+    if(!lead[i])continue;
+    t=i*step;
+    tone(off,dest,'square',lead[i],t,step*0.72,0.045);
+    tone(off,dest,'triangle',lead[i]*2,t,step*0.45,0.02);
+  }
+  /* soft bar chords (C F G C) */
+  var chords=[[261.63,329.63,392.00],[349.23,440.00,523.25],[392.00,493.88,587.33],[261.63,329.63,392.00]];
+  for(b=0;b<4;b++){
+    t=b*beat*4;
+    for(i=0;i<chords[b].length;i++)tone(off,dest,'sine',chords[b][i],t,beat*1.1,0.035);
+  }
+  return off.startRendering();
+}
+function bgmTargetVol(){
+  if(!bgmWanted||muted||document.hidden)return 0.0001;
+  if(state!=='count'&&state!=='racing')return 0.0001;
+  return BGM_VOL;
+}
+function setBgmLevel(){
+  if(!bgmGain||!actx)return;
+  var t=actx.currentTime, v=bgmTargetVol();
+  var cur=Math.max(0.0001,bgmGain.gain.value||0.0001);
+  bgmGain.gain.cancelScheduledValues(t);
+  bgmGain.gain.setValueAtTime(cur,t);
+  bgmGain.gain.linearRampToValueAtTime(v,t+0.08);
+  bgmGain.gain.setValueAtTime(v,t+0.08);
+}
+function startBgm(){
+  bgmWanted=true;
+  if(!unlockAudio()||!master)return;
+  ensureBgm().then(function(buf){
+    if(!buf||!bgmWanted)return;
+    if(state!=='count'&&state!=='racing')return;
+    if(bgm.src){setBgmLevel();return}
+    if(!bgmGain){
+      bgmGain=actx.createGain();
+      bgmGain.gain.value=0.0001;
+      bgmGain.connect(master);
+    }
+    var src=actx.createBufferSource();
+    src.buffer=buf;src.loop=true;
+    src.connect(bgmGain);
+    src.start(actx.currentTime);
+    bgm={src:src};
+    setBgmLevel();
+  });
+}
+function stopBgm(fade){
+  bgmWanted=false;
+  if(!actx){bgm={};return}
+  var t=actx.currentTime, f=(fade==null)?0.18:fade;
+  try{
+    if(bgmGain){
+      bgmGain.gain.cancelScheduledValues(t);
+      bgmGain.gain.setValueAtTime(Math.max(0.0001,bgmGain.gain.value||0.0001),t);
+      bgmGain.gain.exponentialRampToValueAtTime(0.0001,t+f);
+    }
+    if(bgm.src)bgm.src.stop(t+f+0.04);
+  }catch(e){}
+  bgm={};
+}
+function onVisChange(){
+  if(document.hidden){
+    setBgmLevel();
+    if(actx&&actx.state==='running')actx.suspend().catch(function(){});
+  }else{
+    if(unlocked&&actx&&actx.state==='suspended')actx.resume().catch(function(){});
+    if(bgmWanted&&(state==='count'||state==='racing')){
+      if(!bgm.src)startBgm();
+      else setBgmLevel();
+    }
+  }
 }
 
 /* ---------- track ---------- */
@@ -1264,6 +1420,7 @@ function start(){
   lastTs=0;
   camY=player.y+CAM_H;
   sfxCount();
+  startBgm();
   if(!raf)raf=requestAnimationFrame(loop);
   setTimeout(function(){startEngine()},120);
 }
@@ -1282,6 +1439,7 @@ function finishRace(reason){
   if(state==='done')return;
   state='done';
   stopEngine();
+  stopBgm(0.2);
   var place=player.place;
   var rec=false;
   var t=formatTime(player.finishT||raceT);
@@ -1407,6 +1565,7 @@ itemBtn.addEventListener('click',function(e){e.stopPropagation();useItem(player)
 itemBtn.addEventListener('pointerdown',function(e){e.stopPropagation();if(e.cancelable)e.preventDefault()});
 muteBtn.addEventListener('click',function(e){e.stopPropagation();unlockAudio();setMuted(!muted)});
 d.addEventListener('pointerdown',function first(){unlockAudio();d.removeEventListener('pointerdown',first,true)},true);
+d.addEventListener('visibilitychange',onVisChange);
 
 window.PCKart={
   start:start,
@@ -1420,6 +1579,18 @@ window.PCKart={
   },
   shotPlay:shotPlay,
   setMuted:setMuted,
+  endRace:function(r){finishRace(r||'finish')},
+  audio:function(){
+    return {
+      unlocked:unlocked, muted:muted,
+      ctx:actx?actx.state:null,
+      master:master?+master.gain.value.toFixed(3):0,
+      bgm:bgmLive(), bgmWanted:bgmWanted,
+      bgmVol:+bgmTargetVol().toFixed(3),
+      bgmGain:bgmGain?+bgmGain.gain.value.toFixed(3):0,
+      bgmReady:!!bgmBuf, eng:!!(eng&&eng.src)
+    };
+  },
   useItem:function(){useItem(player)},
   hurt:function(k){return hurtPlayer(k||'obs')},
   view:function(){
