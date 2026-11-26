@@ -287,37 +287,46 @@ function onKey(e,down){
   if(down&&(k===' '||k==='Spacebar'||k==='k'||k==='K')){useItem(player);if(k===' ')e.preventDefault()}
   if(down&&(k==='ArrowLeft'||k==='ArrowRight'||k===' '))e.preventDefault();
 }
-var ptrs={};
+var ptrs={}, dragSteer=0, dragId=null, dragX0=0;
 function isUI(el){
   if(!el)return false;
   return !!(el.closest&&(el.closest('.kartback')||el.closest('.kart-mute')||el.closest('.kart-item')||el.closest('.kart-pad')||el.closest('.kbtn')||el.closest('.kart-controls')||el.closest('.overlay')));
 }
-function ptrSteer(x){
-  if(x<W*0.5){holdL=1;holdR=0}else{holdR=1;holdL=0}
+function canvasX(e){
+  var r=canvas.getBoundingClientRect();
+  return (e.clientX-r.left)*(W/Math.max(1,r.width));
 }
 function onDown(e){
   unlockAudio();
   if(isUI(e.target))return;
-  if(e.pointerId!=null)ptrs[e.pointerId]=1;
-  var r=canvas.getBoundingClientRect();
-  ptrSteer((e.clientX-r.left)*(W/r.width));
+  if(e.pointerId!=null){
+    ptrs[e.pointerId]=1;
+    if(dragId==null){dragId=e.pointerId;dragX0=canvasX(e);dragSteer=0}
+  }
   if(e.cancelable)e.preventDefault();
 }
 function onMove(e){
-  if(e.pointerId!=null&&!ptrs[e.pointerId])return;
-  if(isUI(e.target))return;
-  var r=canvas.getBoundingClientRect();
-  ptrSteer((e.clientX-r.left)*(W/r.width));
+  if(e.pointerId==null||e.pointerId!==dragId)return;
+  var dx=canvasX(e)-dragX0, dead=16, v;
+  if(Math.abs(dx)<=dead)dragSteer=0;
+  else{
+    v=(dx-(dx<0?-dead:dead))/(W*0.26);
+    if(v>1)v=1;if(v<-1)v=-1;
+    dragSteer=v;
+  }
   if(e.cancelable)e.preventDefault();
 }
 function onUp(e){
-  if(e.pointerId!=null)delete ptrs[e.pointerId];
-  if(Object.keys(ptrs).length===0){holdL=0;holdR=0}
+  if(e.pointerId!=null){
+    delete ptrs[e.pointerId];
+    if(e.pointerId===dragId){dragId=null;dragSteer=0}
+  }
+  if(Object.keys(ptrs).length===0){holdL=0;holdR=0;dragSteer=0;dragId=null}
   syncSteerBtns();
 }
 function syncSteerBtns(){
-  if(btnL)btnL.classList.toggle('on', !!(padL||holdL||keys.l));
-  if(btnR)btnR.classList.toggle('on', !!(padR||holdR||keys.r));
+  if(btnL)btnL.classList.toggle('on', !!(padL||holdL||keys.l||dragSteer<-0.25));
+  if(btnR)btnR.classList.toggle('on', !!(padR||holdR||keys.r||dragSteer>0.25));
 }
 function bindPad(btn,side){
   if(!btn)return;
@@ -358,6 +367,10 @@ function curveAhead(z,nSeg){
   var c=0,i,s;
   for(i=0;i<nSeg;i++){s=segs[(segIndex(z)+i)%N];c+=s.curve}
   return c/nSeg;
+}
+function curveNow(z){
+  var i=segIndex(z);
+  return segs[i].curve*0.6+segs[(i+1)%N].curve*0.3+segs[(i+2)%N].curve*0.1;
 }
 function bump(a,b){
   var dz=Math.abs(wrapDiff(a.z,b.z));
@@ -436,7 +449,7 @@ function updateRacer(r,dt,isP){
   r.slipT=Math.max(0,r.slipT-dt);
   r.stunT=Math.max(0,r.stunT-dt);
 
-  var cur=curveAhead(r.z,8);
+  var cur=isP?curveNow(r.z):curveAhead(r.z,8);
   var off=Math.abs(r.x)>=1;
   var tgt=r.boostT>0?BOOST_SPD:MAX_SPD*(isP?1:r.skill);
   if(off)tgt=Math.min(tgt,OFF_LIMIT);
@@ -456,9 +469,15 @@ function updateRacer(r,dt,isP){
 
   var st=0;
   if(isP){
-    st=(holdR||keys.r||padR?1:0)-(holdL||keys.l||padL?1:0);
-    if(r.slipT>0)st+=Math.sin(raceT*18)*1.4;
-    steer=steer*0.7+st*0.3;
+    /* direction is fully player-controlled: no auto-center, no steer assist */
+    if(padR||keys.r)st+=1;
+    if(padL||keys.l)st-=1;
+    if(!padL&&!padR&&!keys.l&&!keys.r)st+=dragSteer;
+    if(st>1)st=1;if(st<-1)st=-1;
+    if(r.slipT>0)st+=Math.sin(raceT*18)*1.15;
+    /* snap quickly onto the held direction; release stops turning almost immediately */
+    steer+=(st-steer)*Math.min(1,20*dt);
+    if(Math.abs(st)<0.02&&Math.abs(steer)<0.08)steer=0;
     syncSteerBtns();
     r.steer=steer;
   }else{
@@ -478,11 +497,15 @@ function updateRacer(r,dt,isP){
     if(r.item&&r.itemDelay>0){r.itemDelay-=dt;if(r.itemDelay<=0&&Math.random()<0.7)useItem(r)}
   }
 
-  var cent=cur*(r.speed/MAX_SPD)*0.55;
+  var speedK=Math.min(1,r.speed/MAX_SPD);
   if(isP){
-    r.x+= (st*2.15*(0.45+0.55*Math.min(1,r.speed/MAX_SPD)) - cent) * dt;
+    /* arcade v^2 drift: no input = go straight on a straight, wash wide on a curve */
+    var steerRate=3.05*(0.82+0.18*speedK);
+    var cent=cur*speedK*speedK*0.30;
+    r.x+=(steer*steerRate-cent)*dt;
   }else{
-    r.x+= -cent*0.25*dt;
+    var cent=cur*speedK*0.25;
+    r.x+=-cent*dt;
   }
   if(r.x>1.7)r.x=1.7;
   if(r.x<-1.7)r.x=-1.7;
@@ -1074,8 +1097,31 @@ window.PCKart={
   start:start,
   shotPlay:shotPlay,
   setMuted:setMuted,
-  state:function(){return {mode:state,place:player&&player.place,laps:player&&player.laps,spd:player&&player.speed,item:player&&player.item,n:N,shot:SHOT_Z,z:player&&player.z}},
-  useItem:function(){useItem(player)}
+  useItem:function(){useItem(player)},
+  state:function(){return {mode:state,place:player&&player.place,laps:player&&player.laps,spd:player&&player.speed,item:player&&player.item,n:N,shot:SHOT_Z,z:player&&player.z,x:player&&player.x,steer:player&&player.steer,curve:player?curveNow(player.z):0,off:player?Math.abs(player.x)>=1:false}},
+  skipToRace:function(){
+    if(state==='menu'||state==='done')start();
+    countT=0;state='racing';goFlash=0;
+  },
+  setInput:function(side){
+    padL=side==='l'?1:0;padR=side==='r'?1:0;
+    keys={};holdL=0;holdR=0;dragSteer=0;dragId=null;
+    if(side!=='l'&&side!=='r')steer=0;
+    syncSteerBtns();
+  },
+  placeOn:function(kind){
+    var i=4,x0=0,spd=MAX_SPD*0.92;
+    if(kind==='curve')i=28+12; /* mid first right-hand curve */
+    else if(kind==='straight')i=8;
+    if(kind==='offset'){i=8;x0=0.4}
+    player.z=segs[i].z;player.x=x0;player.y=roadYAt(player.z);player.speed=spd;
+    camY=player.y+CAM_H;
+    return {z:player.z,x:player.x,curve:curveNow(player.z)};
+  },
+  tick:function(n,dt){
+    dt=dt||1/60;n=n||1;
+    var k;for(k=0;k<n;k++)update(dt);
+  }
 };
 
 if(/[?&]shot=1/.test(location.search)){
