@@ -94,6 +94,8 @@ function setMuted(on){
     master.gain.cancelScheduledValues(t);
     master.gain.setValueAtTime(muted?0:0.9,t);
   }
+  if(muted)stopBgm(0.06);
+  else if(state==='play')startBgm(false);
 }
 function noiseBuf(sec){
   var n=Math.max(1,Math.floor(actx.sampleRate*sec));
@@ -220,6 +222,197 @@ function sfxBoomCatch(){
   oscTone('sine',1320,900,0.08,0.08,0.002);
 }
 function sfxDeny(){oscTone('square',240,140,0.1,0.1,0.003)}
+
+/* ---------- bgm: upbeat side-scrolling loop ---------- */
+var bgmGain=null, bgmBuf=null, bgmSrc=null, bgmPlaying=false, bgmOff=0, bgmStartAt=0;
+var BGM_VOL=0.16;
+function midiHz(n){return 440*Math.pow(2,(n-69)/12)}
+function bgmWave(typ,ph){
+  var x=ph-Math.floor(ph);
+  if(typ==='tri')return x<0.5?x*4-1:3-x*4;
+  if(typ==='sqr')return x<0.28?0.85:-0.85;
+  if(typ==='pulse')return x<0.18?0.7:-0.7;
+  if(typ==='saw')return x*2-1;
+  return Math.sin(ph*Math.PI*2);
+}
+function makeBgmBuffer(){
+  var sr=actx.sampleRate, bpm=138, beat=60/bpm, bars=8, beats=bars*4;
+  var dur=beats*beat, n=Math.floor(sr*dur);
+  var buf=actx.createBuffer(2,n,sr);
+  var L=buf.getChannelData(0), R=buf.getChannelData(1);
+  function add(start,len,freq,typ,amp,pan,decay){
+    var i0=Math.max(0,Math.floor(start*sr));
+    var ln=Math.floor(len*sr);
+    if(ln<8||i0>=n)return;
+    var atk=Math.min(Math.floor(0.007*sr),ln*0.2);
+    var rel=Math.min(Math.floor(0.05*sr),ln*0.45);
+    decay=decay||3.2;
+    var panL=pan<=0?1:1-pan, panR=pan>=0?1:1+pan;
+    for(var i=0;i<ln&&i0+i<n;i++){
+      var t=i/sr;
+      var e=Math.exp(-t*decay);
+      if(i<atk)e*=i/atk;
+      else if(i>ln-rel)e*=(ln-i)/rel;
+      var s=bgmWave(typ,freq*t)*amp*e;
+      L[i0+i]+=s*panL;
+      R[i0+i]+=s*panR;
+    }
+  }
+  function addNoise(start,len,amp,pan,hp){
+    var i0=Math.max(0,Math.floor(start*sr));
+    var ln=Math.floor(len*sr);
+    if(ln<4||i0>=n)return;
+    var atk=Math.min(24,ln/6), rel=Math.max(1,ln-atk);
+    var a=0, prev=0;
+    for(var i=0;i<ln&&i0+i<n;i++){
+      var white=Math.random()*2-1;
+      a=a*0.7+white*0.3;
+      var s=a;
+      if(hp){s=white-prev;prev=white}
+      var e=1;
+      if(i<atk)e=i/atk;
+      else e=(ln-i)/rel;
+      e*=e;
+      s*=amp*e;
+      var panL=pan<=0?1:1-pan, panR=pan>=0?1:1+pan;
+      L[i0+i]+=s*panL;
+      R[i0+i]+=s*panR;
+    }
+  }
+  var lead=[
+    74,71,67,71, 74,76,79,76,
+    78,76,74,71, 69,71,74,69,
+    76,74,71,67, 64,67,71,76,
+    72,74,76,79, 76,74,72,69,
+    79,76,74,71, 74,76,79,81,
+    79,76,72,76, 74,72,71,69,
+    71,74,78,81, 78,76,74,71,
+    74,76,79,74, 71,67,64,67
+  ];
+  var bass=[
+    43,43,50,43, 43,47,50,55,
+    38,38,45,38, 38,42,45,50,
+    40,40,47,40, 40,43,47,52,
+    36,36,43,36, 36,40,43,48,
+    43,43,50,43, 43,47,50,55,
+    36,36,43,36, 36,40,43,48,
+    38,38,45,38, 38,45,42,38,
+    43,47,50,55, 47,43,38,43
+  ];
+  var chords=[
+    [59,62,67],[59,62,67],[57,62,66],[57,62,66],
+    [59,64,67],[59,64,67],[55,60,64],[55,60,64],
+    [59,62,67],[55,60,64],[57,62,66],[57,62,66],
+    [59,62,67],[55,62,66],[59,62,67],[55,59,62]
+  ];
+  var q=beat/2, e=beat/2;
+  var i,t0;
+  for(i=0;i<lead.length;i++){
+    t0=i*q;
+    if(lead[i]){
+      add(t0,q*0.92,midiHz(lead[i]),'pulse',0.085,0.18,4.4);
+      add(t0,q*0.92,midiHz(lead[i]),'sin',0.07,0.12,3.6);
+      if(i%8===0)add(t0,q*1.15,midiHz(lead[i]+12),'sin',0.03,0.25,6);
+    }
+  }
+  for(i=0;i<bass.length;i++){
+    t0=i*q;
+    add(t0,q*0.96,midiHz(bass[i]),'tri',0.2,0,2.4);
+    add(t0,q*0.96,midiHz(bass[i]),'sin',0.14,0,2.0);
+  }
+  for(i=0;i<chords.length;i++){
+    t0=i*beat+beat*0.5;
+    chords[i].forEach(function(n,k){
+      add(t0,beat*0.42,midiHz(n),'tri',0.045,-0.15+k*0.1,5.5);
+    });
+  }
+  for(i=0;i<beats;i++){
+    t0=i*beat;
+    add(t0,0.09,58,'sin',0.11,0,9);
+    add(t0,0.07,78,'tri',0.05,0,12);
+    if(i%2===1){
+      addNoise(t0,0.08,0.07,0.05,true);
+      add(t0,0.07,180,'tri',0.03,0,14);
+    }
+    addNoise(t0,0.04,0.03,-0.2,false);
+    addNoise(t0+e,0.035,0.045,0.25,false);
+  }
+  var peak=0.0001;
+  for(i=0;i<n;i++){
+    var a=Math.abs(L[i]), b=Math.abs(R[i]);
+    if(a>peak)peak=a;
+    if(b>peak)peak=b;
+  }
+  var g=0.72/peak;
+  for(i=0;i<n;i++){
+    L[i]=Math.tanh(L[i]*g);
+    R[i]=Math.tanh(R[i]*g);
+  }
+  return buf;
+}
+function ensureBgm(){
+  if(!unlockAudio()||!master)return false;
+  if(!bgmGain){
+    bgmGain=actx.createGain();
+    bgmGain.gain.value=0.0001;
+    bgmGain.connect(master);
+  }
+  if(!bgmBuf){
+    try{bgmBuf=makeBgmBuffer()}catch(err){bgmBuf=null;return false}
+  }
+  return !!bgmBuf;
+}
+function stopBgm(fade){
+  if(!actx){bgmPlaying=false;return}
+  var t=actx.currentTime;
+  fade=fade==null?0.1:fade;
+  if(bgmSrc&&bgmBuf&&bgmStartAt){
+    bgmOff=(bgmOff+(t-bgmStartAt))%bgmBuf.duration;
+    if(bgmOff<0)bgmOff=0;
+  }
+  if(bgmGain){
+    var cur=bgmGain.gain.value;
+    bgmGain.gain.cancelScheduledValues(t);
+    bgmGain.gain.setValueAtTime(Math.max(0.0001,cur),t);
+    bgmGain.gain.linearRampToValueAtTime(0.0001,t+Math.max(0.02,fade));
+  }
+  if(bgmSrc){
+    var src=bgmSrc;
+    bgmSrc=null;
+    try{src.stop(t+Math.max(0.03,fade)+0.02)}catch(e){try{src.stop()}catch(e2){}}
+  }
+  bgmPlaying=false;
+}
+function startBgm(fromStart){
+  if(!ensureBgm())return;
+  if(fromStart)bgmOff=0;
+  if(muted||(typeof d!=='undefined'&&d.hidden)){
+    if(bgmPlaying)stopBgm(0.06);
+    return;
+  }
+  if(bgmPlaying&&bgmSrc&&!fromStart)return;
+  if(bgmSrc){
+    try{bgmSrc.stop()}catch(e){}
+    bgmSrc=null;
+    bgmPlaying=false;
+  }
+  if(actx.state==='suspended')actx.resume();
+  var src=actx.createBufferSource();
+  src.buffer=bgmBuf;
+  src.loop=true;
+  src.connect(bgmGain);
+  var t=actx.currentTime;
+  var off=bgmOff%bgmBuf.duration;
+  bgmGain.gain.cancelScheduledValues(t);
+  bgmGain.gain.setValueAtTime(0.0001,t);
+  bgmGain.gain.linearRampToValueAtTime(BGM_VOL,t+0.14);
+  try{src.start(t,off)}catch(e){try{src.start(0,off)}catch(e2){return}}
+  bgmSrc=src;
+  bgmStartAt=t;
+  bgmPlaying=true;
+  src.onended=function(){if(bgmSrc===src){bgmSrc=null;bgmPlaying=false}};
+}
+
 
 /* ---------- helpers ---------- */
 function clamp(v,a,b){return v<a?a:v>b?b:v}
@@ -356,10 +549,12 @@ function start(){
   d.body.classList.add('playing');
   lastTs=0;
   if(!raf)raf=requestAnimationFrame(loop);
+  startBgm(true);
 }
 
 function gameOver(){
   state='over';
+  stopBgm(0.16);
   sfxOver();
   if(pads)pads.hidden=true;
   var nb=saveBest(score);
@@ -1520,8 +1715,12 @@ d.addEventListener('keyup',function(e){
 go.addEventListener('click',function(e){e.stopPropagation();unlockAudio();start()});
 muteBtn.addEventListener('click',function(e){e.stopPropagation();unlockAudio();setMuted(!muted)});
 d.addEventListener('visibilitychange',function(){
-  if(d.hidden&&state==='play'){paused=true}
-  else{paused=false;lastTs=0}
+  if(d.hidden&&state==='play'){paused=true;stopBgm(0.08)}
+  else{
+    paused=false;lastTs=0;
+    if(actx&&actx.state==='suspended')actx.resume();
+    if(state==='play'&&!muted)startBgm(false);
+  }
 });
 window.addEventListener('resize',size);
 if(window.visualViewport)window.visualViewport.addEventListener('resize',size);
@@ -1678,7 +1877,7 @@ window.PCQuest={
   shotSkill:shotSkill,
   freeze:function(on){frozen=!!on;if(frozen)draw()},
   shotBoomerang:shotBoomerang,
-  info:function(){return {state:state,stage:stage,phase:phase,lv:player&&player.lv,hp:player&&player.hp,score:score,kills:kills,combo:player&&player.combo,atkT:player&&player.atkT,y:player&&player.y,vx:player&&player.vx,onG:player&&player.onG,skillT:player&&player.skillT,skill:player&&player.skill&&player.skill.t,weapon:weapon,unlocked:weaponUnlocked,booms:booms.length,W:W,H:H,en:enemies.map(function(e){return e.kind+' '+e.hp})}}
+  info:function(){return {state:state,stage:stage,phase:phase,lv:player&&player.lv,hp:player&&player.hp,score:score,kills:kills,combo:player&&player.combo,atkT:player&&player.atkT,y:player&&player.y,vx:player&&player.vx,onG:player&&player.onG,skillT:player&&player.skillT,skill:player&&player.skill&&player.skill.t,weapon:weapon,unlocked:weaponUnlocked,booms:booms.length,muted:muted,bgm:!!(bgmPlaying&&bgmSrc),actx:actx&&actx.state,W:W,H:H,en:enemies.map(function(e){return e.kind+' '+e.hp})}}
 };
 
 
