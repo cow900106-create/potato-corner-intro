@@ -242,6 +242,16 @@ var audio=(function(){
       if(i%2===0)lead(t,arp[bar][(i/2)%4],bus,0.05,0.22);
       if(i===0)chord(t,[arp[bar][0],arp[bar][1],arp[bar][2]],bus,0.028);
       if(i===8)hat(t,bus,0.018);
+    }},
+    merge:{bpm:88,fn:function(s,t,bus){
+      var i=s%16;
+      var prog=[[196.00,246.94,293.66,392.00],[174.61,220.00,261.63,349.23],[164.81,196.00,246.94,329.63],[146.83,196.00,246.94,293.66]];
+      var bar=(s>>4)%4;
+      if(i===0)bass(t,prog[bar][0]/2,bus,0.09,0.52);
+      if(i%2===0)lead(t,prog[bar][(i/2)%4],bus,0.042,0.3);
+      if(i===0)chord(t,[prog[bar][1],prog[bar][2],prog[bar][3]],bus,0.022);
+      if(i===8)hat(t,bus,0.012);
+      if(i===12)lead(t,prog[bar][3]*1.5,bus,0.03,0.24);
     }}
   };
 
@@ -294,9 +304,10 @@ var audio=(function(){
   function pauseBgm(){if(bgm.on){bgm.on=false;clearTimer();if(bgmGain&&ctx){var t=ctx.currentTime;bgmGain.gain.setTargetAtTime(0.0001,t,0.05)}}wantedBgm=wantedBgm||bgm.style}
   function resumeBgm(){if(wantedBgm||bgm.style)startBgm(wantedBgm||bgm.style)}
 
-  function play(name){
+  function play(name,opts){
     unlock();
     if(!ctx||!sfxGain)return;
+    opts=opts||{};
     var t=ctx.currentTime+0.01;
     switch(name){
       case 'start':
@@ -359,6 +370,29 @@ var audio=(function(){
       case 'catch':
         oscTone('triangle',698.46,880,t,0.09,0.14,sfxGain);
         oscTone('sine',1046.5,1046.5,t+0.05,0.12,0.08,sfxGain);
+        break;
+      case 'drop':
+        noiseBurst(t,0.06,0.055,sfxGain,{type:'lowpass',freq:900});
+        oscTone('sine',240,120,t,0.09,0.08,sfxGain,{type:'lowpass',freq:700});
+        break;
+      case 'bump':
+        oscTone('sine',170,110,t,0.05,Math.min(0.07,(opts.force||0.4)*0.06),sfxGain,{type:'lowpass',freq:520});
+        break;
+      case 'merge':
+        (function(){
+          var k=Math.max(2,opts.tier||2),c=Math.max(1,opts.combo||1);
+          var f=392*Math.pow(2,((k-2)*1.5+Math.min(c-1,5)*1.2)/12);
+          oscTone('triangle',f,f*1.33,t,0.11,0.16,sfxGain);
+          oscTone('sine',f*1.5,f*2,t+0.05,0.15,0.1,sfxGain,{type:'lowpass',freq:3200});
+          if(c>=2)oscTone('sine',f*2,f*2.2,t+0.1,0.12,0.06,sfxGain);
+        })();
+        break;
+      case 'mergeMax':
+        oscTone('triangle',523.25,523.25,t,0.12,0.16,sfxGain);
+        oscTone('triangle',659.25,659.25,t+0.1,0.14,0.16,sfxGain);
+        oscTone('triangle',783.99,783.99,t+0.2,0.16,0.16,sfxGain);
+        oscTone('sine',1046.5,1318.5,t+0.32,0.4,0.18,sfxGain);
+        noiseBurst(t+0.08,0.2,0.05,sfxGain,{type:'highpass',freq:2000});
         break;
       default:break;
     }
