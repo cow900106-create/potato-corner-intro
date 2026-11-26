@@ -215,7 +215,7 @@ function doMerge(a,b){
   }
   var nb=makeBall(nxt,x,y,{scale:0.58,born:0.28});
   nb.vy=-80;nb.vx=(a.vx+b.vx)*0.25;
-  nb.rot=(a.rot+b.rot)/2;
+  nb.rot=(a.rot+b.rot)/2;nb.omega=(a.omega+b.omega)*0.2;
   var add=tier(nxt).score*(combo>1?combo:1);
   setScore(score+add);
   if(nxt>highest)highest=nxt;
@@ -230,12 +230,99 @@ function doMerge(a,b){
   }
 }
 
+function inertia(b){return 0.5*b.m*b.r*b.r}
+
 function physics(dt){
-  var steps=8,h=dt/steps,g=2050,rest=0.2,fric=0.22;
+  var steps=8,h=dt/steps,g=2050,rest=0.16,mu=0.28,slop=0.25,corr=0.8;
   var L=innerL(),R=innerR(),B=innerB();
+  var maxSurf=480;
+
+  function wall(b,nx,ny,pen){
+    if(pen>0){b.x+=nx*pen;b.y+=ny*pen}
+    else return;
+    var I=inertia(b),tx=-ny,ty=nx;
+    /* contact vel vs static wall; r_vec = -n*r, omega×r = (omega*ny*r, -omega*nx*r) */
+    var cx=b.vx+b.omega*ny*b.r, cy=b.vy-b.omega*nx*b.r;
+    var vn=cx*nx+cy*ny, vt=cx*tx+cy*ty, jn=0;
+    if(vn<0){
+      var e=Math.abs(vn)<60?0:rest;
+      jn=-(1+e)*vn*b.m;
+      b.vx+=jn/b.m*nx;b.vy+=jn/b.m*ny;
+      if(Math.abs(vn)>90)maybeBump(Math.abs(vn));
+      if(b.fresh&&Math.abs(vn)>20)b.fresh=false;
+    }else{
+      jn=b.m*g*h*Math.max(0,-ny);
+      if(Math.abs(nx)>0.5)jn=Math.max(jn,b.m*18);
+    }
+    var kt=1/b.m+(b.r*b.r)/I;
+    var jt=-vt/kt, lim=mu*Math.max(Math.abs(jn),b.m*g*h*0.25);
+    if(jt>lim)jt=lim;if(jt<-lim)jt=-lim;
+    b.vx+=jt/b.m*tx;b.vy+=jt/b.m*ty;
+    b.omega+=(-b.r*jt)/I;
+  }
+
+  function pair(A,C){
+    var dx=C.x-A.x,dy=C.y-A.y,min=A.r+C.r,dist2=dx*dx+dy*dy;
+    if(dist2>=min*min||dist2<1e-12)return;
+    var dist=Math.sqrt(dist2),nx=dx/dist,ny=dy/dist,overlap=min-dist;
+    var inv=1/(A.m+C.m),sep=Math.max(0,overlap-slop)*corr;
+    A.x-=nx*sep*C.m*inv;A.y-=ny*sep*C.m*inv;
+    C.x+=nx*sep*A.m*inv;C.y+=ny*sep*A.m*inv;
+    var IA=inertia(A),IC=inertia(C),tx=-ny,ty=nx;
+    /* contact vel includes spin: vA + omegaA*rA*t , vC - omegaC*rC*t */
+    var Avx=A.vx+A.omega*A.r*tx,Avy=A.vy+A.omega*A.r*ty;
+    var Cvx=C.vx-C.omega*C.r*tx,Cvy=C.vy-C.omega*C.r*ty;
+    var rvx=Cvx-Avx,rvy=Cvy-Avy;
+    var vn=rvx*nx+rvy*ny,vt=rvx*tx+rvy*ty,jn=0;
+    if(vn<0){
+      var e=Math.abs(vn)<55?0:rest;
+      if(overlap>A.r*0.28)e=0;
+      jn=-(1+e)*vn/(1/A.m+1/C.m);
+      A.vx-=jn/A.m*nx;A.vy-=jn/A.m*ny;
+      C.vx+=jn/C.m*nx;C.vy+=jn/C.m*ny;
+      if(Math.abs(vn)>90)maybeBump(Math.abs(jn)/Math.max(A.m,C.m));
+      if(A.fresh&&Math.abs(jn)>8)A.fresh=false;
+      if(C.fresh&&Math.abs(jn)>8)C.fresh=false;
+    }else if(overlap>0.35){
+      jn=Math.min(A.m,C.m)*g*h*0.85;
+    }
+    var kt=1/A.m+1/C.m+(A.r*A.r)/IA+(C.r*C.r)/IC;
+    var jt=vt/kt,lim=mu*Math.max(Math.abs(jn),Math.min(A.m,C.m)*g*h*0.2);
+    if(jt>lim)jt=lim;if(jt<-lim)jt=-lim;
+    A.vx+=jt/A.m*tx;A.vy+=jt/A.m*ty;
+    C.vx-=jt/C.m*tx;C.vy-=jt/C.m*ty;
+    A.omega+=(A.r*jt)/IA;
+    C.omega+=(C.r*jt)/IC;
+  }
+
+  function stabilize(b){
+    var cap=maxSurf/Math.max(8,b.r);
+    if(b.omega>cap)b.omega=cap;
+    if(b.omega<-cap)b.omega=-cap;
+    var spd=Math.hypot(b.vx,b.vy),surf=Math.abs(b.omega)*b.r;
+    var onFloor=(b.y+b.r)>=(B-1.25);
+    var damp=1.6;
+    if(onFloor||spd<40)damp+=4;
+    if(onFloor&&spd<22)damp+=8;
+    if(surf>spd+24)damp+=7;
+    b.omega*=Math.max(0,1-damp*h);
+    /* in-place / squeezed spin: little horizontal motion should not keep spinning */
+    if(Math.abs(b.vx)<22){
+      b.omega*=Math.max(0,1-12*h);
+      if(surf<45 && Math.abs(b.vx)<14)b.omega=0;
+    }
+    /* sleep spin when almost still; never cancel gravity in mid-air */
+    if(spd<18 && surf<28)b.omega=0;
+    if(onFloor && spd<10){
+      if(Math.abs(b.vx)<8)b.vx=0;
+      if(Math.abs(b.vy)<28)b.vy=0;
+      if(surf<28)b.omega=0;
+    }
+  }
+
   for(var s=0;s<steps;s++){
-    var live=[];
-    for(var i=0;i<balls.length;i++)if(!balls[i].dead)live.push(balls[i]);
+    var live=[],i,j;
+    for(i=0;i<balls.length;i++)if(!balls[i].dead)live.push(balls[i]);
     for(i=0;i<live.length;i++){
       var b=live[i];
       if(b.born>0)continue;
@@ -243,60 +330,22 @@ function physics(dt){
       b.vx*=(1-0.18*h);
       b.x+=b.vx*h;
       b.y+=b.vy*h;
-      b.rot+=b.omega*h;
-      if(b.x-b.r<L){
-        b.x=L+b.r;
-        if(b.vx<0){var imp=-b.vx;b.vx=-b.vx*rest;b.omega+=imp/(b.r)*0.6;maybeBump(imp)}
-      }
-      if(b.x+b.r>R){
-        b.x=R-b.r;
-        if(b.vx>0){imp=b.vx;b.vx=-b.vx*rest;b.omega-=imp/(b.r)*0.6;maybeBump(imp)}
-      }
-      if(b.y+b.r>B){
-        b.y=B-b.r;
-        if(b.vy>0){imp=b.vy;b.vy=-b.vy*rest;maybeBump(imp)}
-        b.omega+=(0-b.omega-b.vx/b.r)*Math.min(1,fric*4*h);
-        b.vx*=(1-fric*6*h);
-        if(Math.abs(b.vy)<28)b.vy=0;
-        if(Math.abs(b.vx)<6){b.vx=0;if(Math.abs(b.omega)<0.4)b.omega=0}
-        if(b.fresh&&imp>20)b.fresh=false;
+      if(b.x-b.r<L)wall(b,1,0,L-(b.x-b.r));
+      if(b.x+b.r>R)wall(b,-1,0,(b.x+b.r)-R);
+      if(b.y+b.r>B)wall(b,0,-1,(b.y+b.r)-B);
+    }
+    for(var pass=0;pass<2;pass++){
+      for(i=0;i<live.length;i++){
+        for(j=i+1;j<live.length;j++){
+          if(live[i].born>0||live[j].born>0)continue;
+          pair(live[i],live[j]);
+        }
       }
     }
     for(i=0;i<live.length;i++){
-      for(var j=i+1;j<live.length;j++){
-        var A=live[i],C=live[j];
-        if(A.born>0||C.born>0)continue;
-        var dx=C.x-A.x,dy=C.y-A.y,min=A.r+C.r;
-        var dist2=dx*dx+dy*dy;
-        if(dist2>min*min || dist2<1e-8)continue;
-        var dist=Math.sqrt(dist2),nx=dx/dist,ny=dy/dist;
-        var overlap=min-dist;
-        var inv=1/(A.m+C.m);
-        A.x-=nx*overlap*C.m*inv;
-        A.y-=ny*overlap*C.m*inv;
-        C.x+=nx*overlap*A.m*inv;
-        C.y+=ny*overlap*A.m*inv;
-        var rvx=C.vx-A.vx,rvy=C.vy-A.vy;
-        var vn=rvx*nx+rvy*ny;
-        if(vn<0){
-          var e=overlap>A.r*0.25?0.05:rest;
-          var jimp=-(1+e)*vn/(1/A.m+1/C.m);
-          A.vx-=jimp/A.m*nx;A.vy-=jimp/A.m*ny;
-          C.vx+=jimp/C.m*nx;C.vy+=jimp/C.m*ny;
-          var tx=-ny,ty=nx;
-          var vt=rvx*tx+rvy*ty;
-          var jt=vt/(1/A.m+1/C.m);
-          var mu=0.12;
-          if(Math.abs(jt)>Math.abs(jimp)*mu)jt=Math.sign(jt||1)*Math.abs(jimp)*mu;
-          A.vx+=jt/A.m*tx;A.vy+=jt/A.m*ty;
-          C.vx-=jt/C.m*tx;C.vy-=jt/C.m*ty;
-          A.omega-=jt/(A.m*A.r)*0.8;
-          C.omega+=jt/(C.m*C.r)*0.8;
-          maybeBump(Math.abs(jimp)/Math.max(A.m,C.m));
-          if(A.fresh&&Math.abs(jimp)>8)A.fresh=false;
-          if(C.fresh&&Math.abs(jimp)>8)C.fresh=false;
-        }
-      }
+      if(live[i].born>0)continue;
+      stabilize(live[i]);
+      live[i].rot+=live[i].omega*h;
     }
   }
   /* merges after substeps */
@@ -674,12 +723,27 @@ window.PCMerge={
     b.fresh=false;balls.push(b);if(t>highest)highest=t;draw();return b;
   },
   freeze:function(on){frozen=!!on;if(on)draw()},
+  nudge:function(id,vx,omega){
+    for(var i=0;i<balls.length;i++){
+      if(balls[i].id!==id)continue;
+      if(vx!=null)balls[i].vx=vx;
+      if(omega!=null)balls[i].omega=omega;
+      return true;
+    }
+    return false;
+  },
   setScore:setScore,
   info:function(){
+    var maxAv=0,list=[];
+    for(var i=0;i<balls.length;i++){
+      var b=balls[i],av=b.omega||0;
+      if(Math.abs(av)>Math.abs(maxAv))maxAv=av;
+      list.push({id:b.id,t:b.t,x:+b.x.toFixed(1),y:+b.y.toFixed(1),vx:+b.vx.toFixed(3),vy:+b.vy.toFixed(3),av:+av.toFixed(4),rot:+(b.rot||0).toFixed(4),r:+b.r.toFixed(2),surf:+(Math.abs(av)*b.r).toFixed(2)});
+    }
     return {
       run:run,over:over,score:score,best:best,combo:combo,cool:cool,warn:warn,
       balls:balls.length,held:held?held.t:0,next:nextT,highest:highest,
-      danger:box.danger,w:W,h:H
+      danger:box.danger,w:W,h:H,maxAv:maxAv,list:list
     };
   },
   audio:function(){return G.audio?G.audio.info():null}
