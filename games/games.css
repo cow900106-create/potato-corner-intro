@@ -737,3 +737,37 @@ body.play.pinpage #toLobby[hidden],body.play.pinpage .how[hidden]{display:none!i
   body.play.pinpage .pbtn-l,body.play.pinpage .pbtn-r{width:80px;height:54px}
   body.play.pinpage .pbtn-shoot{width:64px;height:64px;font-size:14px}
 }
+
+/* bubble — 黃金薯條泡泡龍, portrait fullscreen like merge */
+html.bubpage{height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;touch-action:none}
+body.play.bubpage{position:fixed;inset:0;width:100vw;height:100%;height:100dvh;margin:0;padding:0;overflow:hidden;overscroll-behavior:none;touch-action:none;background:#5aaa32;-webkit-user-select:none;user-select:none}
+body.play.bubpage .stagewrap{position:fixed;inset:0;margin:0;max-width:none;width:100%;height:100%;border-radius:0;box-shadow:none;background:#5aaa32}
+body.play.bubpage,body.play.bubpage .stagewrap,body.play.bubpage canvas#stage{touch-action:none;overscroll-behavior:none}
+body.play.bubpage .runback{position:absolute;z-index:40;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));color:#fff;text-decoration:none;font-weight:700;font-size:13px;line-height:1;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.36)}
+body.play.bubpage .hud-mute{position:absolute;z-index:41;top:calc(8px + env(safe-area-inset-top,0px));right:calc(8px + env(safe-area-inset-right,0px));appearance:none;border:0;background:rgba(0,0,0,.4);color:#fff;font-weight:800;font-size:12px;line-height:1;border-radius:99px;padding:7px 11px;cursor:pointer;font-family:inherit;pointer-events:auto;-webkit-tap-highlight-color:transparent}
+body.play.bubpage .hud-mute[aria-pressed="true"]{background:rgba(80,20,20,.7);color:#fce404}
+body.play.bubpage .bubhud{position:absolute;z-index:35;top:calc(10px + env(safe-area-inset-top,0px));left:0;right:0;display:flex;justify-content:center;flex-wrap:wrap;gap:8px 14px;padding:0 86px 0 72px;box-sizing:border-box;font-size:13px;font-weight:700;color:rgba(255,255,255,.92);text-shadow:0 1px 3px rgba(0,0,0,.55);pointer-events:none}
+body.play.bubpage .bubhud b{color:#fce404;font-weight:800}
+body.play.bubpage .bubhud[hidden]{display:none!important}
+body.play.bubpage .bub-next{position:absolute;z-index:38;left:0;top:0;transform:translate(-50%,-50%);width:72px;height:72px;padding:0;margin:0;border:3px solid #fce404;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6c8,#f0c14a 62%,#d39a20);box-shadow:0 4px 0 rgba(0,0,0,.28),0 6px 12px rgba(0,0,0,.2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;cursor:pointer;font-family:inherit;color:#3a2208;pointer-events:auto;-webkit-tap-highlight-color:transparent;touch-action:none;appearance:none}
+body.play.bubpage .bub-next[hidden]{display:none!important}
+body.play.bubpage .bub-next span{font-size:9px;font-weight:900;line-height:1;margin-top:2px}
+body.play.bubpage .bub-next img{width:44px;height:44px;object-fit:contain;pointer-events:none;display:block;margin-top:-2px}
+body.play.bubpage .overlay{padding:12px 16px;padding-top:calc(48px + env(safe-area-inset-top,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));gap:8px;justify-content:center}
+.overlay.bubstart{background:linear-gradient(180deg,rgba(6,70,28,.35),rgba(6,50,22,.82)),url("img/bubble/cover.webp") center/cover no-repeat;justify-content:flex-end}
+.overlay.bubstart .ovcover{height:min(28vh,230px);width:auto;max-width:min(72vw,260px);object-fit:cover;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.32),0 0 0 3px #fce404;background:#f4e29a;flex:none}
+.overlay.bubover .ovcover,.overlay .ovcover[hidden]{display:none!important}
+body.play.bubpage .overlay .ovt{font-size:26px;font-weight:900}
+body.play.bubpage .overlay .ovs{font-size:15px;max-width:22em}
+body.play.bubpage .overlay .big{font-size:36px}
+body.play.bubpage .overlay .fine{flex:none;margin:6px 8px 0;font-size:11px;line-height:1.45;color:#d7eadc;text-align:center;max-width:26em}
+body.play.bubpage .how{max-width:min(360px,94%);font-size:13px;line-height:1.45;padding:8px 12px}
+body.play.bubpage #toLobby[hidden],body.play.bubpage .how[hidden]{display:none!important}
+.bub-best{margin:0;font-weight:800;color:#fce404;font-size:14px;min-height:1em}
+@media (max-height:700px){
+  .overlay.bubstart .ovcover{height:min(22vh,160px)}
+  body.play.bubpage .overlay .ovt{font-size:22px}
+  body.play.bubpage .how{font-size:12px;padding:6px 10px}
+  body.play.bubpage .bub-next{width:64px;height:64px}
+  body.play.bubpage .bub-next img{width:38px;height:38px}
+}

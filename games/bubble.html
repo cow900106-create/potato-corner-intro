@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW" class="bubpage">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#148c44">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>黃金薯條泡泡龍｜薯條小遊戲（非官方）</title>
+<meta name="description" content="瞄準射出同色風味薯球，三個連在一起就爆開，懸空的會整串掉落加分。單手就能玩。非官方小遊戲。">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="stylesheet" href="games.css?v=34">
+</head>
+<body class="play bubpage">
+<div class="stagewrap" id="wrap">
+<canvas id="stage" aria-label="黃金薯條泡泡龍遊戲畫面"></canvas>
+<a class="runback" href="index.html">選單</a>
+<button class="hud-mute" id="muteBtn" type="button" aria-pressed="false" aria-label="音效" title="音效">聲音</button>
+<div class="runhud bubhud" id="hud" hidden>
+<span>分數 <b id="score">0</b></span>
+<span>最高 <b id="best">0</b></span>
+<span>第 <b id="level">1</b> 關</span>
+</div>
+<button class="bub-next" id="nextBtn" type="button" hidden aria-label="和下一個交換">
+<span>下一顆</span>
+<img id="nextIm" alt="下一顆" width="52" height="52" src="img/bubble/cheese.webp">
+</button>
+<div class="overlay bubstart" id="ov">
+<img class="ovlogo" id="ovlogo" src="img/logo.png" alt="Potato Corner">
+<img class="ovcover" id="ovcover" src="img/bubble/cover.webp" alt="黃金薯條泡泡龍">
+<p class="ovt" id="ovT">黃金薯條泡泡龍</p>
+<p class="ovs" id="ovS">按住拖曳瞄準，放開就射出。三顆同色連在一起會爆開，懸空的整串掉落加倍分。</p>
+<p class="bub-best" id="bestLine"></p>
+<div class="how" id="how">
+<div><span>瞄</span> 按住拖曳畫出反彈路線，放開即射出</div>
+<div><span>換</span> 點右下「下一顆」可跟手中這顆交換</div>
+<div><span>！</span> 每 6 發頂部會下降一行，壓到警戒線就結束</div>
+</div>
+<div class="endbtns" id="endbtns">
+<button class="btn" id="go" type="button">開始玩</button>
+<a class="btn quiet" id="toLobby" href="index.html" hidden>回大廳</a>
+</div>
+<div id="recSlot"></div>
+<p class="fine" id="fine">最高分只存在你的手機瀏覽器。這是非官方小遊戲，沒有兌換或獎品。</p>
+</div>
+</div>
+<script src="games.js?v=7"></script>
+<script src="bubble.js?v=1"></script>
+</body>
+</html>
