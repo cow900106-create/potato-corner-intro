@@ -11,7 +11,7 @@ var pads=d.getElementById('pads'),btnL=d.getElementById('btnL'),btnR=d.getElemen
 var KEY='pcGamePinballBest';
 var W=0,H=0,dpr=1,run=false,frozen=false,over=false,score=0,best=G.getBest(KEY);
 var last=0,raf=0,mult=1,ballsLeft=3,combo=0,comboT=0,goldFlash=0,shake=0,chargeTick=0;
-var power=0,gateClosed=false,stillT=0,serveT=0,fadeBall=0,lastLaunch=0;
+var power=0,gateClosed=false,stillT=0,upperT=0,serveT=0,fadeBall=0,lastLaunch=0;
 var heldL=0,heldR=0,heldS=0,prevL=0,prevR=0;
 var pointers={},keys={l:0,r:0,s:0};
 var ball=null,parts=[],floats=[],lights=[];
@@ -80,7 +80,7 @@ function layout(){
   var arcR=(R-L)*0.5;
   var cx=(L+R)/2;
   var cy=top+arcR;
-  var br=Math.max(26,Math.min(38,playW*0.112));
+  var br=Math.max(22,Math.min(27,playW*0.082));
   var flipLen=Math.max(54,Math.min(70,playW*0.26));
   var flipY=bot-28;
   var restC=Math.cos(0.52);
@@ -88,11 +88,10 @@ function layout(){
   var leftPx=mid-pivotGap/2;
   var rightPx=mid+pivotGap/2;
   T={L:L,R:R,top:top,bot:bot,laneL:laneL,laneR:R,laneW:laneW,playW:playW,mid:mid,arcR:arcR,cx:cx,cy:cy,ballR:ballR,hudH:hudH,padH:padH,flipY:flipY,flipLen:flipLen};
-  var bumpY=cy+T.arcR*0.55+playW*0.20-52;
-
   walls=[];
-  /* outer cabinet rails */
+  /* outer cabinet rails — straight left wall, no tight kicker corner */
   addArc(cx,cy,arcR,Math.PI,Math.PI*2,22,6,0.4,'arch');
+  addWall(L,cy,L,bot-8,6,0.4,'wall');
   addWall(R,cy,R,bot-4,6,0.4,'wall');
   /* lane floor + inner lane wall (open at the arch so the ball can exit) */
   addWall(laneL+1,bot-4,R-1,bot-4,4,0.2,'laneFloor');
@@ -108,21 +107,10 @@ function layout(){
   var ir=apex(aRight,innerR);
   addWall(laneL-2,cy+8,ir.x,ir.y+2,5,0.18,'rail'); /* entrance bridge from the lane */
   var ex=apex(aLeft,innerR);
-  /* short inward lip aims the rail drop at the raised cluster, with bumper clearance */
-  addWall(ex.x,ex.y,ex.x+20,ex.y+22,5,0.16,'rail');
+  addWall(ex.x,ex.y,ex.x+12,ex.y+14,5,0.16,'rail'); /* short drop lip, no corner trap */
   railY=cy-innerR*0.15;
   T.innerR=innerR;T.aLeft=aLeft;T.aRight=aRight;
-
-  /* left wall splits into a downward kicker that feeds the raised bumper cluster */
   var midR=innerR+channel*0.45;
-  var kickStartY=cy+28;
-  var kickX=L+playW*0.12;
-  var kickEndY=Math.max(kickStartY+24,bumpY-10);
-  var leftReturnY=Math.max(kickEndY,bumpY)+br*1.25;
-  addWall(L,cy,L,kickStartY,6,0.4,'wall');
-  addWall(L,kickStartY,kickX,kickEndY,6,0.18,'kicker',200);
-  addWall(kickX,kickEndY,L,leftReturnY,6,0.28,'wall');
-  addWall(L,leftReturnY,L,bot-8,6,0.4,'wall');
 
   /* inlane slants funneling onto flippers (no cruel outlanes) */
   addWall(L,bot-110,leftPx-18,flipY+8,6,0.38,'wall');
@@ -144,17 +132,19 @@ function layout(){
   });
 
   var saveB=bumpers.map(function(b){return {flash:b.flash,pop:b.pop,cd:b.cd}});
-  /* bumper cluster already lifted ~52px via bumpY */
+  /* three flavor potatoes spread across the mid-upper field with wide lanes between them */
+  var minGap=ballR*2.8;
+  var wallFace=L+6, laneFace=laneL-4;
   bumpers=[
-    {id:'cheese',x:mid-playW*0.165,y:bumpY,r:br,img:IM.cheese,color:'#f5c430',score:100,flash:0,pop:0,cd:0},
-    {id:'chili',x:mid+playW*0.165,y:bumpY,r:br,img:IM.chili,color:'#d3261f',score:100,flash:0,pop:0,cd:0},
-    {id:'onion',x:mid,y:bumpY+br*1.55,r:br,img:IM.onion,color:'#efe6c8',score:100,flash:0,pop:0,cd:0}
+    {id:'cheese',x:wallFace+br+minGap+12,y:cy+arcR*0.74,r:br,img:IM.cheese,color:'#f5c430',score:100,flash:0,pop:0,cd:0},
+    {id:'chili',x:laneFace-br-minGap-12,y:cy+arcR*0.62+playW*0.24,r:br,img:IM.chili,color:'#d3261f',score:100,flash:0,pop:0,cd:0},
+    {id:'onion',x:mid-playW*0.04,y:cy+arcR*0.62+playW*0.50,r:br,img:IM.onion,color:'#efe6c8',score:100,flash:0,pop:0,cd:0}
   ];
   for(var i=0;i<saveB.length&&i<bumpers.length;i++){
     bumpers[i].flash=saveB[i].flash;bumpers[i].pop=saveB[i].pop;bumpers[i].cd=saveB[i].cd;
   }
 
-  var ty=bumpY+br*2.55;
+  var ty=bumpers[0].y+br+14;
   var saveDown=targets.map(function(t){return t.down});
   targets=[
     {x:L+22,y:ty,w:18,h:28,down:!!saveDown[0],color:'#f5c430',cd:0},
@@ -239,7 +229,7 @@ function serveBall(){
   var x=(T.laneL+T.R)/2;
   var y=T.bot-4-T.ballR-1;
   ball=makeBall(x,y,'lane');
-  power=0;gateClosed=false;stillT=0;serveT=0;fadeBall=0;
+  power=0;gateClosed=false;stillT=0;upperT=0;serveT=0;fadeBall=0;
 }
 
 function flipEnds(f){
@@ -312,10 +302,7 @@ function collideWalls(b){
       if(!gateClosed&&b.mode==='lane')continue;
       if(!gateClosed&&b.x>T.laneL-b.r*0.4)continue;
     }
-    var kick=w.kick;
-    /* kicker is a one-way feed: only punch falling balls, so bumper rebounds can escape to the flippers */
-    if(w.kind==='kicker'&&b.vy<30)kick=0;
-    hit=resolveCapsule(b,w.ax,w.ay,w.bx,w.by,w.rad,w.e,kick);
+    hit=resolveCapsule(b,w.ax,w.ay,w.bx,w.by,w.rad,w.e,w.kick);
     if(hit&&w.kind==='sling'){
       var sl=slings[w.ax<T.mid?0:1];
       if(sl&&sl.cd<=0){
@@ -372,7 +359,7 @@ function collideBumpers(b){
     b.x+=nx*(minD-dist);b.y+=ny*(minD-dist);
     vn=b.vx*nx+b.vy*ny;
     if(vn<0){b.vx-=1.15*vn*nx;b.vy-=1.15*vn*ny}
-    kick=440;
+    kick=380;
     b.vx+=nx*kick;b.vy+=ny*kick;
     var sp=Math.hypot(b.vx,b.vy);
     if(sp>MAXV){b.vx=b.vx/sp*MAXV;b.vy=b.vy/sp*MAXV}
@@ -546,7 +533,7 @@ function showOver(){
 }
 
 function resetState(){
-  parts=[];floats=[];ball=null;power=0;gateClosed=false;stillT=0;serveT=0;
+  parts=[];floats=[];ball=null;power=0;gateClosed=false;stillT=0;upperT=0;serveT=0;
   setScore(0);setMult(1);ballsLeft=3;combo=0;comboT=0;goldFlash=0;shake=0;
   over=false;frozen=false;heldL=heldR=heldS=0;pointers={};keys={l:0,r:0,s:0};
   for(var i=0;i<gates.length;i++)gates[i].lit=false;
@@ -652,7 +639,17 @@ function physics(dt){
           spawnBurst(ball.x,ball.y,'#fff6bf',8,120);
         }
       }else stillT=0;
-    }else stillT=0;
+      /* if a ball stays in the upper field too long, nudge it down so it can never farm a corner forever */
+      if(ball.y<T.flipY-180){
+        upperT+=dt;
+        if(upperT>=4){
+          upperT=1.2;
+          ball.vy+=640;
+          ball.vx*=0.55;
+          spawnBurst(ball.x,ball.y,'#fff6bf',8,140);
+        }
+      }else upperT=0;
+    }else{stillT=0;upperT=0}
   }
 
   for(i=parts.length-1;i>=0;i--){
@@ -826,8 +823,6 @@ function draw(){
   strokeWalls('arch','#fce404',7,14);
   strokeWalls('arch','#fff6bf',2.5,0);
   strokeWalls('wall','#f0c14a',6,8);
-  strokeWalls('kicker','#e89220',7,10);
-  strokeWalls('kicker','#ffe36b',2.5,0);
   strokeWalls('laneInner','#f0c14a',6,8);
   if(gateClosed)strokeWalls('gateDoor','#ff8a3a',6,10);
   strokeWalls('rail','#9ad4ff',6,12);
@@ -914,9 +909,9 @@ function draw(){
     ctx.globalAlpha=1;
     ctx.shadowBlur=0;
     im=p.img;
-    var sz=p.r*2.15;
+    var szW=p.r*2.35,szH=p.r*2.85;
     if(ready(im)){
-      ctx.drawImage(im,-sz/2,-sz/2-2,sz,sz);
+      ctx.drawImage(im,-szW/2,-szH/2-2,szW,szH);
     }else{
       ctx.fillStyle=p.color;
       ctx.beginPath();ctx.arc(0,0,p.r,0,Math.PI*2);ctx.fill();
