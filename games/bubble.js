@@ -22,9 +22,9 @@ var COLORS=[
   {id:'chili',name:'香辣',color:'#e3262f',tint:'#ff7a7a'},
   {id:'onion',name:'洋蔥',color:'#2ecf8a',tint:'#8af0c0'},
   {id:'bbq',name:'BBQ',color:'#6a3518',tint:'#c47a4a'},
-  {id:'purple',name:'海鹽紫薯',color:'#8b4dff',tint:'#c9a0ff'}
+  {id:'purple',name:'紫薯',color:'#8b4dff',tint:'#c9a0ff'}
 ];
-var BOMB={id:'bomb',name:'彩虹黃金炸彈',color:'#ffd24a',tint:'#fff1a8'};
+var BOMB={id:'bomb',name:'炸彈',color:'#ffd24a',tint:'#fff1a8'};
 var META={
   cheese:{cx:0.499,cy:0.592,r:0.393},
   chili:{cx:0.499,cy:0.587,r:0.385},
@@ -35,10 +35,11 @@ var META={
 };
 function src(p){var i=new Image();i.src=p;return i}
 var IM={};
-['cheese','chili','onion','bbq','purple','bomb'].forEach(function(k){
+['cheese','chili','onion','bbq','purple','bomb','cannon'].forEach(function(k){
   IM[k]=src('img/bubble/'+k+'.webp');
-  IM[k].addEventListener('load',function(){draw()});
+  IM[k].addEventListener('load',function(){if(k==='cannon')layout();else draw()});
 });
+var CANNON={px:0.480,py:0.742,mx:0.468,my:0.125};
 function ready(im){return im&&im.complete&&im.naturalWidth>0}
 function colorById(id){
   if(id==='bomb')return BOMB;
@@ -98,8 +99,16 @@ function setScore(n){score=Math.max(0,n|0);if(elScore)elScore.textContent=score}
 function setLevel(n){level=Math.max(1,n|0);if(elLevel)elLevel.textContent=level}
 function showQueue(){
   if(nextIm&&nextBall){
+    var col=colorById(nextBall);
     nextIm.src='img/bubble/'+nextBall+'.webp';
-    nextIm.alt=colorById(nextBall).name;
+    nextIm.alt=col.name;
+    if(nextBtn){
+      nextBtn.style.setProperty('--glow',col.color);
+      nextBtn.style.borderColor=col.color;
+      nextBtn.style.boxShadow='0 0 0 3px rgba(255,255,255,.92),0 0 16px '+col.color+',0 4px 0 rgba(0,0,0,.28),0 6px 12px rgba(0,0,0,.2)';
+      var lab=nextBtn.querySelector('span');
+      if(lab)lab.textContent='下一顆·'+col.name;
+    }
   }
 }
 
@@ -115,19 +124,35 @@ function layout(){
   boardL=pad+4;boardR=W-pad-4;
   R=(boardR-boardL)/(COLS*2);
   boardT=Math.max(52,Math.round(H*0.075))+8;
-  var bot=Math.max(112,Math.round(H*0.155));
+  var bot=Math.max(168,Math.round(H*0.205));
   dangerY=H-bot;
   shootX=(boardL+boardR)/2;
-  shootY=H-Math.max(64,Math.round(bot*0.58));
+  shootY=H-Math.max(52,Math.round(bot*0.30)); /* axle / wheel pivot */
   relayoutCells();
   placeNextBtn();
   if(aiming)buildAim();
   draw();
 }
+function cannonScale(){
+  var im=IM.cannon,w=ready(im)?im.naturalWidth:522,h=ready(im)?im.naturalHeight:720;
+  var dist=Math.hypot((CANNON.mx-CANNON.px)*w,(CANNON.my-CANNON.py)*h);
+  return (3.45*R)/Math.max(40,dist);
+}
+function barrelLen(){
+  var im=IM.cannon,sc=cannonScale();
+  var w=ready(im)?im.naturalWidth:522,h=ready(im)?im.naturalHeight:720;
+  return Math.hypot((CANNON.mx-CANNON.px)*w,(CANNON.my-CANNON.py)*h)*sc;
+}
+function aimNow(){return (aiming||flying)?aimAng:-Math.PI/2}
+function muzzleAt(ang){
+  if(ang==null)ang=aimNow();
+  var len=barrelLen();
+  return {x:shootX+Math.cos(ang)*len,y:shootY+Math.sin(ang)*len};
+}
 function placeNextBtn(){
   if(!nextBtn)return;
-  var x=Math.min(W-44,shootX+R*3.15);
-  var y=shootY+R*0.15;
+  var x=Math.min(W-46,boardR-36);
+  var y=Math.min(H-46,shootY+R*0.15);
   nextBtn.style.left=x+'px';
   nextBtn.style.top=y+'px';
 }
@@ -436,8 +461,9 @@ function fire(){
   if(!run||over||busy>0||flying||!current||rowDropping)return false;
   var ang=aimAng;
   var speed=860;
+  var mz=muzzleAt(ang);
   flying={
-    id:current,x:shootX,y:shootY,
+    id:current,x:mz.x,y:mz.y,
     vx:Math.cos(ang)*speed,vy:Math.sin(ang)*speed,
     bounces:0
   };
@@ -510,11 +536,15 @@ function clampAim(ang){
 }
 function setAimFrom(x,y){
   aimX=x;aimY=y;
-  aimAng=clampAim(Math.atan2(y-shootY,x-shootX));
+  var origin=muzzleAt(aimNow());
+  /* if we already have a stable up-muzzle, aim from that default muzzle so the first drag feels natural */
+  var up=muzzleAt(-Math.PI/2);
+  aimAng=clampAim(Math.atan2(y-up.y,x-up.x));
   buildAim();
 }
 function buildAim(){
-  var pts=[],x=shootX,y=shootY;
+  var origin=muzzleAt(aimAng);
+  var pts=[],x=origin.x,y=origin.y;
   var vx=Math.cos(aimAng),vy=Math.sin(aimAng);
   var maxLen=H*2.6,traveled=0,step=5,bounces=0;
   pts.push({x:x,y:y});
@@ -569,7 +599,7 @@ function onDown(e){
   if(t&&t.closest&&t.closest('button,a,.hud-mute,.runback,.bub-next,.overlay'))return;
   var p=pointerPos(e);
   if(inSwapZone(p.x,p.y))return;
-  if(p.y>shootY+R*1.6)return;
+  if(p.y>H-28)return;
   if(e.pointerId!=null){pid=e.pointerId;try{cv.setPointerCapture(e.pointerId)}catch(err){}}
   inputKind=kind;
   aiming=true;setAimFrom(p.x,p.y);
@@ -636,6 +666,12 @@ function tick(dt){
   }
 }
 
+function rgba(hex,a){
+  var c=(hex||'#fff').replace('#','');
+  if(c.length===3)c=c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  var n=parseInt(c,16);
+  return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
 function drawBall(id,x,y,r,alpha,scale){
   var im=IM[id],meta=META[id]||{cx:0.5,cy:0.58,r:0.39};
   scale=scale==null?1:scale;
@@ -653,6 +689,56 @@ function drawBall(id,x,y,r,alpha,scale){
     ctx.fillStyle=col.color;ctx.fill();
     ctx.strokeStyle='rgba(0,0,0,.2)';ctx.lineWidth=1.5;ctx.stroke();
   }
+  ctx.restore();
+}
+function drawGlow(x,y,r,col,strength){
+  strength=strength==null?1:strength;
+  var g=ctx.createRadialGradient(x,y,r*0.55,x,y,r*1.55);
+  g.addColorStop(0,rgba(col.tint||col.color,0));
+  g.addColorStop(0.62,rgba(col.color,0.08*strength));
+  g.addColorStop(0.8,rgba(col.color,0.42*strength));
+  g.addColorStop(1,rgba(col.color,0));
+  ctx.fillStyle=g;
+  ctx.beginPath();ctx.arc(x,y,r*1.55,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,r*1.05,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,255,255,'+(0.92*strength)+')';
+  ctx.lineWidth=Math.max(2,r*0.09);ctx.stroke();
+  ctx.beginPath();ctx.arc(x,y,r*1.16,0,Math.PI*2);
+  ctx.strokeStyle=rgba(col.color,0.95*strength);
+  ctx.lineWidth=Math.max(2.4,r*0.12);ctx.stroke();
+}
+function drawDirArrow(x,y,ang,r,col,scale){
+  scale=scale==null?1:scale;
+  var d=r*1.42,size=r*0.62*scale;
+  var tx=x+Math.cos(ang)*d,ty=y+Math.sin(ang)*d;
+  ctx.save();
+  ctx.translate(tx,ty);ctx.rotate(ang);
+  ctx.beginPath();
+  ctx.moveTo(size,0);
+  ctx.lineTo(-size*0.55,size*0.62);
+  ctx.lineTo(-size*0.28,0);
+  ctx.lineTo(-size*0.55,-size*0.62);
+  ctx.closePath();
+  ctx.fillStyle=col.color;
+  ctx.strokeStyle='rgba(255,255,255,.95)';
+  ctx.lineWidth=2;ctx.lineJoin='round';
+  ctx.stroke();ctx.fill();
+  ctx.restore();
+}
+function drawNameTag(x,y,r,col){
+  var label=col.name;
+  ctx.save();
+  ctx.font='bold 12px system-ui,sans-serif';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  var w=ctx.measureText(label).width+14,h=18;
+  /* keep the tag beside the ball so it never covers the cannon face */
+  var tx=x-Math.max(w/2+r*1.05,r*1.7),ty=y+r*0.2;
+  ctx.fillStyle='rgba(40,18,4,.78)';
+  roundRect(tx-w/2,ty-h/2,w,h,9,true);
+  ctx.strokeStyle=rgba(col.color,0.95);
+  ctx.lineWidth=1.6;roundRect(tx-w/2,ty-h/2,w,h,9,false);
+  ctx.fillStyle='#fff';
+  ctx.fillText(label,tx,ty+0.5);
   ctx.restore();
 }
 
@@ -689,27 +775,42 @@ function drawAim(){
 }
 
 function drawShooter(){
-  var ang=aiming||flying?aimAng:-Math.PI/2;
+  var ang=aimNow();
+  var im=IM.cannon,sc=cannonScale();
+  var iw=ready(im)?im.naturalWidth:522,ih=ready(im)?im.naturalHeight:720;
+  var dw=iw*sc,dh=ih*sc;
+  var defAng=Math.atan2((CANNON.my-CANNON.py)*ih,(CANNON.mx-CANNON.px)*iw);
   ctx.save();
-  ctx.translate(shootX,shootY+R*0.85);
-  ctx.rotate(ang+Math.PI/2);
-  /* clay cannon body */
-  ctx.fillStyle='#d9a428';
-  roundRect(-R*0.95,-R*0.55,R*1.9,R*2.35,R*0.45,true);
-  ctx.fillStyle='#f0c14a';
-  roundRect(-R*0.72,-R*0.7,R*1.44,R*1.15,R*0.4,true);
-  ctx.fillStyle='#8a5a16';
-  ctx.beginPath();ctx.arc(0,R*1.55,R*0.55,0,Math.PI*2);ctx.fill();
+  ctx.translate(shootX,shootY);
+  ctx.rotate(ang-defAng);
+  if(ready(im)){
+    ctx.drawImage(im,-CANNON.px*dw,-CANNON.py*dh,dw,dh);
+  }else{
+    ctx.fillStyle='#f0c14a';
+    roundRect(-R*1.1,-barrelLen(),R*2.2,barrelLen()+R*1.2,R*0.5,true);
+  }
   ctx.restore();
-  /* current ball sits in the muzzle */
-  if(current&&!flying)drawBall(current,shootX,shootY,R,1,1);
-  if(flying)drawBall(flying.id,flying.x,flying.y,R,1,1);
-  /* shot countdown dots */
-  var dots=shotsMax,dw=9,gap=5;
-  var total=dots*dw+(dots-1)*gap;
-  var dx=shootX-total/2,dy=shootY+R*2.15;
+  var pulse=0.85+0.15*Math.sin((last||0)/180);
+  if(current&&!flying){
+    var mz=muzzleAt(ang),col=colorById(current);
+    drawGlow(mz.x,mz.y,R*1.08,col,pulse);
+    drawBall(current,mz.x,mz.y,R,1,1.12);
+    drawDirArrow(mz.x,mz.y,ang,R*1.08,col,1);
+    drawNameTag(mz.x,mz.y,R*1.12,col);
+  }
+  if(flying){
+    var fcol=colorById(flying.id);
+    var fang=Math.atan2(flying.vy,flying.vx);
+    drawGlow(flying.x,flying.y,R*1.05,fcol,1.1);
+    drawBall(flying.id,flying.x,flying.y,R,1,1.1);
+    drawDirArrow(flying.x,flying.y,fang,R*1.05,fcol,1.05);
+  }
+  /* shot countdown dots under the carriage */
+  var dots=shotsMax,dwot=9,gap=5;
+  var total=dots*dwot+(dots-1)*gap;
+  var dx=shootX-total/2,dy=Math.min(H-16,shootY+R*2.05);
   for(var i=0;i<dots;i++){
-    ctx.beginPath();ctx.arc(dx+dw/2+i*(dw+gap),dy,dw/2,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(dx+dwot/2+i*(dwot+gap),dy,dwot/2,0,Math.PI*2);
     ctx.fillStyle=i<shotsLeft?'#fce404':'rgba(0,0,0,.28)';
     ctx.fill();
     ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=1;ctx.stroke();
@@ -980,7 +1081,7 @@ window.PCBubble={
       ['onion','bbq','cheese','chili','onion','bbq','purple','cheese'],
       ['bbq','purple','chili','onion','cheese','chili','onion']
     ]);
-    current='cheese';nextBall='bomb';showQueue();
+    current='chili';nextBall='bomb';showQueue();
     shotsLeft=4;busy=0;flying=null;
     /* aim up-right so the path shows a clear wall bounce into the cluster */
     setAimFrom(boardR-6,shootY-R*8);
@@ -999,7 +1100,7 @@ window.PCBubble={
     return {
       run:run,over:over,score:score,best:best,level:level,busy:busy,
       current:current,next:nextBall,shotsLeft:shotsLeft,shotsMax:shotsMax,
-      flying:!!flying,aiming:aiming,aimAng:aimAng,balls:ballCount(),shootX:shootX,shootY:shootY,boardL:boardL,boardR:boardR,boardT:boardT,
+      flying:!!flying,aiming:aiming,aimAng:aimAng,balls:ballCount(),shootX:shootX,shootY:shootY,muzzle:muzzleAt(),boardL:boardL,boardR:boardR,boardT:boardT,
       maxRow:maxFilledRow(),dangerY:dangerY,R:R,w:W,h:H,
       lastSnap:lastSnap,bounces:lastBounces,lastPop:lastPop,lastFall:lastFall,
       rowDropping:rowDropping,celebrate:celebrate,topParity:topParity
