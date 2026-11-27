@@ -88,11 +88,11 @@ function layout(){
   var leftPx=mid-pivotGap/2;
   var rightPx=mid+pivotGap/2;
   T={L:L,R:R,top:top,bot:bot,laneL:laneL,laneR:R,laneW:laneW,playW:playW,mid:mid,arcR:arcR,cx:cx,cy:cy,ballR:ballR,hudH:hudH,padH:padH,flipY:flipY,flipLen:flipLen};
+  var bumpY=cy+T.arcR*0.55+playW*0.20-52;
 
   walls=[];
   /* outer cabinet rails */
   addArc(cx,cy,arcR,Math.PI,Math.PI*2,22,6,0.4,'arch');
-  addWall(L,cy,L,bot-8,6,0.4,'wall');
   addWall(R,cy,R,bot-4,6,0.4,'wall');
   /* lane floor + inner lane wall (open at the arch so the ball can exit) */
   addWall(laneL+1,bot-4,R-1,bot-4,4,0.2,'laneFloor');
@@ -102,15 +102,27 @@ function layout(){
   /* inner wireform under the arch: ball rolls right-to-left across 3 gates, then drops in */
   var channel=Math.max(46,Math.min(58,arcR*0.28));
   var innerR=arcR-channel;
-  var aRight=Math.PI*2-0.10,aLeft=Math.PI-0.62;
+  var aRight=Math.PI*2-0.10,aLeft=Math.PI-0.28;
   function apex(ang,rad){return {x:cx+Math.cos(ang)*rad,y:cy+Math.sin(ang)*rad}}
   addArc(cx,cy,innerR,aRight,aLeft,22,5,0.18,'rail');
   var ir=apex(aRight,innerR);
   addWall(laneL-2,cy+8,ir.x,ir.y+2,5,0.18,'rail'); /* entrance bridge from the lane */
   var ex=apex(aLeft,innerR);
-  addWall(ex.x,ex.y,ex.x+22,ex.y+32,5,0.16,'rail'); /* inward drop lip, no corner trap */
+  /* short inward lip aims the rail drop at the raised cluster, with bumper clearance */
+  addWall(ex.x,ex.y,ex.x+20,ex.y+22,5,0.16,'rail');
   railY=cy-innerR*0.15;
   T.innerR=innerR;T.aLeft=aLeft;T.aRight=aRight;
+
+  /* left wall splits into a downward kicker that feeds the raised bumper cluster */
+  var midR=innerR+channel*0.45;
+  var kickStartY=cy+28;
+  var kickX=L+playW*0.12;
+  var kickEndY=Math.max(kickStartY+24,bumpY-10);
+  var leftReturnY=Math.max(kickEndY,bumpY)+br*1.25;
+  addWall(L,cy,L,kickStartY,6,0.4,'wall');
+  addWall(L,kickStartY,kickX,kickEndY,6,0.18,'kicker',200);
+  addWall(kickX,kickEndY,L,leftReturnY,6,0.28,'wall');
+  addWall(L,leftReturnY,L,bot-8,6,0.4,'wall');
 
   /* inlane slants funneling onto flippers (no cruel outlanes) */
   addWall(L,bot-110,leftPx-18,flipY+8,6,0.38,'wall');
@@ -120,7 +132,6 @@ function layout(){
   addWall(rightPx+18,flipY+8,rightPx+6,bot+6,5,0.25,'wall');
 
   var saveLit=gates.map(function(g){return g.lit});
-  var midR=innerR+channel*0.45;
   var gAng=[Math.PI+0.42,Math.PI*1.5,Math.PI*2-0.48];
   var gMeta=[
     {id:'cheese',color:'#f5c430',glow:'#ffe36b',name:'起司'},
@@ -133,16 +144,17 @@ function layout(){
   });
 
   var saveB=bumpers.map(function(b){return {flash:b.flash,pop:b.pop,cd:b.cd}});
+  /* bumper cluster already lifted ~52px via bumpY */
   bumpers=[
-    {id:'cheese',x:mid-playW*0.165,y:cy+T.arcR*0.55+playW*0.20,r:br,img:IM.cheese,color:'#f5c430',score:100,flash:0,pop:0,cd:0},
-    {id:'chili',x:mid+playW*0.165,y:cy+T.arcR*0.55+playW*0.20,r:br,img:IM.chili,color:'#d3261f',score:100,flash:0,pop:0,cd:0},
-    {id:'onion',x:mid,y:cy+T.arcR*0.55+playW*0.20+br*1.55,r:br,img:IM.onion,color:'#efe6c8',score:100,flash:0,pop:0,cd:0}
+    {id:'cheese',x:mid-playW*0.165,y:bumpY,r:br,img:IM.cheese,color:'#f5c430',score:100,flash:0,pop:0,cd:0},
+    {id:'chili',x:mid+playW*0.165,y:bumpY,r:br,img:IM.chili,color:'#d3261f',score:100,flash:0,pop:0,cd:0},
+    {id:'onion',x:mid,y:bumpY+br*1.55,r:br,img:IM.onion,color:'#efe6c8',score:100,flash:0,pop:0,cd:0}
   ];
   for(var i=0;i<saveB.length&&i<bumpers.length;i++){
     bumpers[i].flash=saveB[i].flash;bumpers[i].pop=saveB[i].pop;bumpers[i].cd=saveB[i].cd;
   }
 
-  var ty=cy+T.arcR*0.55+playW*0.20+br*2.7;
+  var ty=bumpY+br*2.55;
   var saveDown=targets.map(function(t){return t.down});
   targets=[
     {x:L+22,y:ty,w:18,h:28,down:!!saveDown[0],color:'#f5c430',cd:0},
@@ -300,7 +312,10 @@ function collideWalls(b){
       if(!gateClosed&&b.mode==='lane')continue;
       if(!gateClosed&&b.x>T.laneL-b.r*0.4)continue;
     }
-    hit=resolveCapsule(b,w.ax,w.ay,w.bx,w.by,w.rad,w.e,w.kick);
+    var kick=w.kick;
+    /* kicker is a one-way feed: only punch falling balls, so bumper rebounds can escape to the flippers */
+    if(w.kind==='kicker'&&b.vy<30)kick=0;
+    hit=resolveCapsule(b,w.ax,w.ay,w.bx,w.by,w.rad,w.e,kick);
     if(hit&&w.kind==='sling'){
       var sl=slings[w.ax<T.mid?0:1];
       if(sl&&sl.cd<=0){
@@ -811,6 +826,8 @@ function draw(){
   strokeWalls('arch','#fce404',7,14);
   strokeWalls('arch','#fff6bf',2.5,0);
   strokeWalls('wall','#f0c14a',6,8);
+  strokeWalls('kicker','#e89220',7,10);
+  strokeWalls('kicker','#ffe36b',2.5,0);
   strokeWalls('laneInner','#f0c14a',6,8);
   if(gateClosed)strokeWalls('gateDoor','#ff8a3a',6,10);
   strokeWalls('rail','#9ad4ff',6,12);
